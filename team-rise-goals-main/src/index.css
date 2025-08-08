@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* OKR Dashboard Design System - Minimal + Soft Neumorphism */
+
+@layer base {
+  :root {
+    /* Base colors */
+    --background: 240 10% 98%;
+    --foreground: 240 10% 8%;
+
+    /* Card with neumorphic feel */
+    --card: 240 10% 100%;
+    --card-foreground: 240 10% 8%;
+
+    /* Popover */
+    --popover: 240 10% 100%;
+    --popover-foreground: 240 10% 8%;
+
+    /* Primary - Professional purple/blue */
+    --primary: 250 60% 55%;
+    --primary-foreground: 240 10% 98%;
+    --primary-soft: 250 60% 95%;
+
+    /* Secondary - Soft gray */
+    --secondary: 240 8% 95%;
+    --secondary-foreground: 240 10% 8%;
+
+    /* Muted tones */
+    --muted: 240 8% 96%;
+    --muted-foreground: 240 6% 46%;
+
+    /* Accent - Warmer purple */
+    --accent: 260 50% 92%;
+    --accent-foreground: 260 50% 20%;
+
+    /* Success, warning, destructive */
+    --success: 140 50% 50%;
+    --success-foreground: 140 50% 98%;
+    --warning: 45 100% 60%;
+    --warning-foreground: 45 100% 10%;
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 70% 98%;
+
+    /* Borders and inputs */
+    --border: 240 8% 88%;
+    --input: 240 8% 94%;
+    --ring: 250 60% 55%;
+
+    /* Neumorphic shadows */
+    --shadow-neumorph-light: 240 10% 100%;
+    --shadow-neumorph-dark: 240 15% 85%;
+
+    /* Enhanced radius for modern feel */
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Neumorphic card classes */
+  .neumorph-card {
+    background: hsl(var(--card));
+    box-shadow: 
+      8px 8px 16px hsl(var(--shadow-neumorph-dark) / 0.15),
+      -8px -8px 16px hsl(var(--shadow-neumorph-light) / 0.7);
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+  }
+
+  .neumorph-card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .neumorph-card-hover:hover {
+    box-shadow: 
+      12px 12px 24px hsl(var(--shadow-neumorph-dark) / 0.2),
+      -12px -12px 24px hsl(var(--shadow-neumorph-light) / 0.8);
+    transform: translateY(-2px);
+  }
+
+  /* Status indicators */
+  .status-on-track { @apply bg-green-100 text-green-700 border-green-200; }
+  .status-at-risk { @apply bg-yellow-100 text-yellow-700 border-yellow-200; }
+  .status-blocked { @apply bg-red-100 text-red-700 border-red-200; }
+
+  /* Smooth transitions */
+  .smooth-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer components {
+  /* Custom button variants */
+  .btn-neumorph {
+    @apply bg-card border border-border rounded-full px-6 py-2 text-sm font-medium;
+    @apply hover:shadow-md active:shadow-sm transition-all duration-200;
+    box-shadow: 
+      4px 4px 8px hsl(var(--shadow-neumorph-dark) / 0.1),
+      -4px -4px 8px hsl(var(--shadow-neumorph-light) / 0.5);
+  }
+
+  .btn-neumorph:hover {
+    transform: translateY(-1px);
+    box-shadow: 
+      6px 6px 12px hsl(var(--shadow-neumorph-dark) / 0.15),
+      -6px -6px 12px hsl(var(--shadow-neumorph-light) / 0.7);
+  }
+}
