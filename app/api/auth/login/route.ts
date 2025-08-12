@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     .neq("is_deleted", true);
 
   const token = signToken({
+    name: user.name,
     email: user.email,
     role: user.role,
     id: user.id,

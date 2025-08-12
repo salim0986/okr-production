@@ -12,15 +12,15 @@ export const PATCH = requireAuth(
     const payload = await req.json();
 
     const { is_read } = payload;
+    console.log(is_read);
 
     const { data, error } = await supabase
       .from("notifications")
       .update({ is_read })
       .eq("id", id)
-      .eq("user_id", user.id)
       .select()
       .single();
-
+    console.log(error);
     if (!data) {
       return NextResponse.json(
         { error: "No notification found." },

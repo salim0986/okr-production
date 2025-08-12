@@ -14,7 +14,7 @@ export const GET = requireAuth(
         `
         id,
         name,
-        team_lead:users!teams_lead_id_fkey(id, name),
+        lead_id,
         users:users!users_team_id_fkey(id),
         objectives:objectives!fk_objectives_team_id(id, status)
       `
@@ -26,31 +26,38 @@ export const GET = requireAuth(
     }
 
     // 2. Compute metrics per team
-    const insights = (teams || []).map((t) => {
-      const total = t.objectives?.length || 0;
-      const completed =
-        t.objectives?.filter((o) => o.status === "completed").length || 0;
+    const insights = await Promise.all(
+      (teams || []).map(async (t) => {
+        const { data: leadData, error: leadError } = await supabase
+          .from("users")
+          .select("name")
+          .eq("id", t.lead_id)
+          .maybeSingle();
 
-      const completionPercent =
-        total > 0 ? Math.round((completed / total) * 100) : 0;
+        const total = t.objectives?.length || 0;
+        const completed =
+          t.objectives?.filter((o) => o.status === "completed").length || 0;
 
-      // aggregate status: overdue > at_risk > ahead > on_track
-      const priority = ["overdue", "at_risk", "ahead", "on_track"];
-      const statuses = t.objectives?.map((o) => o.status) || [];
-      const status =
-        statuses.find((s) => s === "overdue") ||
-        statuses.find((s) => s === "at_risk") ||
-        statuses.find((s) => s === "ahead") ||
-        "on_track";
+        const completionPercent =
+          total > 0 ? Math.round((completed / total) * 100) : 0;
 
-      return {
-        team: t.name,
-        lead: t.team_lead[0]?.name || null,
-        members: t.users?.length || 0,
-        completion: completionPercent,
-        status,
-      };
-    });
+        // aggregate status: overdue > at_risk > ahead > on_track
+        const statuses = t.objectives?.map((o) => o.status) || [];
+        const status =
+          statuses.find((s) => s === "overdue") ||
+          statuses.find((s) => s === "at_risk") ||
+          statuses.find((s) => s === "ahead") ||
+          "on_track";
+
+        return {
+          team: t.name,
+          lead: leadData?.name || "Unknown",
+          members: t.users?.length || 0,
+          completion: completionPercent,
+          status,
+        };
+      })
+    );
 
     // 3. Return top 10 by completion desc
     insights.sort((a, b) => b.completion - a.completion);

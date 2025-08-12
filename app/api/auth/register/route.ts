@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import { signToken } from "@/app/api/utils/auth";
 
 export async function POST(req: NextRequest) {
-  const { email, password, name, role, organization_id, team_id } =
+  const { email, orgName, password, name, role, organization_id, team_id } =
     await req.json();
 
   const { data: existingUser } = await supabase
@@ -30,6 +30,9 @@ export async function POST(req: NextRequest) {
       team_id,
     },
   ]);
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   const { data: user } = await supabase
     .from("users")
@@ -37,11 +40,27 @@ export async function POST(req: NextRequest) {
     .eq("email", email)
     .maybeSingle();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (role === "admin") {
+    const { data, error } = await supabase.from("organizations").insert([
+      {
+        name: orgName || "",
+        created_by: user.id,
+      },
+    ]);
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    const { data: organization } = await supabase
+      .from("organizations")
+      .select("*")
+      .eq("created_by", user.id)
+      .maybeSingle();
+
+    user.organization_id = organization.id;
   }
 
   const token = signToken({
+    name,
     email,
     role,
     id: user.id,

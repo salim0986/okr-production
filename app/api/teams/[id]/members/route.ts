@@ -6,7 +6,7 @@ import { Role } from "@/app/api/types/auth/roles";
 import { UserPayload } from "@/app/api/types/auth/authTypes";
 
 export const GET = requireAuth(
-  [Role.TEAM_LEAD, Role.EMPLOYEE],
+  [Role.TEAM_LEAD, Role.EMPLOYEE, Role.ORG_ADMIN],
   async (req: NextRequest, user: UserPayload) => {
     // 1. Extract team_id from the path
     const segments = req.nextUrl.pathname.split("/").filter(Boolean);
@@ -16,7 +16,7 @@ export const GET = requireAuth(
       return NextResponse.json({ error: "Missing team_id" }, { status: 400 });
     }
     // 2. Ensure this team_lead is actually lead of this team
-    if (user.team_id !== teamId) {
+    if (user.team_id !== teamId && user.role != "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

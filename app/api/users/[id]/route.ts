@@ -9,7 +9,7 @@ export const PUT = requireAuth(
     const userId = req.url.split("/").pop();
     const body = await req.json();
     const { name } = body;
-
+    console.log(user.organization_id);
     const { data, error } = await supabase
       .from("users")
       .update({ name })

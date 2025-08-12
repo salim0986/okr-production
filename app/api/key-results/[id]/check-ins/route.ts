@@ -31,7 +31,7 @@ export const POST = requireAuth(
 
     const { data: keyResult, error: krError } = await supabase
       .from("key_results")
-      .select("assigned_to")
+      .select("assigned_to, target_value")
       .eq("id", keyResultId)
       .single();
 
@@ -46,6 +46,13 @@ export const POST = requireAuth(
         { error: "Unauthorized to check-in on this key result." },
         { status: 403 }
       );
+
+    if (progress > keyResult.target_value) {
+      return NextResponse.json(
+        { error: "Invalid progress value!" },
+        { status: 403 }
+      );
+    }
 
     const { error } = await supabase.from("check_ins").insert({
       key_result_id: keyResultId,
