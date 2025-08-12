@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import UpdateProgressModal, { KRForModal } from "./update-progress-modal";
 import { useAuth } from "@/contexts/auth-context";
+import KeyResultCard from "./key-result-modal";
 
 type KR = {
   id: string;
@@ -35,15 +36,29 @@ type KR = {
   description?: string | null;
 };
 
-type Objective = {
+export type Objective = {
   id: string;
   title: string;
   description?: string | null;
   progress: number;
   status: string;
   end_date?: string | null;
-  created_by?: string | null;
-  keyResults?: KR[]; // optional preloaded
+  team: {
+    id: string;
+    name: string;
+  };
+  keyResults?: KR[];
+};
+
+type Comment = {
+  id: string;
+  text: string;
+  created_at: string;
+  user: {
+    id: string;
+    name: string;
+    role: string;
+  };
 };
 
 type Props = {
@@ -129,29 +144,6 @@ export default function ObjectiveCard({
   };
 
   // comment
-  const postComment = async (krId: string) => {
-    const text = (commentText[krId] || "").trim();
-    if (!text) return;
-    setLoadingAction(true);
-    try {
-      const res = await fetch(`/api/key-results/${krId}/comments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) throw new Error("Failed to post comment");
-      setCommentText((s) => ({ ...s, [krId]: "" }));
-      onUpdated?.();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingAction(false);
-      setCommentOpenId(null);
-    }
-  };
 
   // update progress via existing modal (team-lead/admin)
   const handleKRUpdate = async (newValue: number) => {
@@ -173,7 +165,7 @@ export default function ObjectiveCard({
           x.id === activeKR.id ? { ...x, current_value: newValue } : x
         )
       );
-      onUpdated?.();
+      fetchKRs();
     } catch (err) {
       console.error(err);
     } finally {
@@ -229,12 +221,9 @@ export default function ObjectiveCard({
                   ? new Date(objective.end_date).toLocaleDateString()
                   : "—"}
               </div>
-              <div>
-                Owner:{" "}
-                {objective.created_by
-                  ? membersMap[objective.created_by] ?? objective.created_by
-                  : "—"}
-              </div>
+              {user?.role === "admin" && (
+                <div>Team: {objective.team.name ?? "---"}</div>
+              )}
             </div>
           </div>
 
@@ -282,163 +271,35 @@ export default function ObjectiveCard({
               </button>
             </div>
 
-            {expanded && (
-              <div id={`krs-${objective.id}`} className="space-y-4">
-                {loadingKRs ? (
-                  <div className="text-sm text-muted-foreground">
-                    Loading key results...
-                  </div>
-                ) : krs.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">
-                    No key results found
-                  </div>
-                ) : (
-                  krs.map((kr) => {
-                    const isMine = !!(
-                      kr.assigned_to && kr.assigned_to === currentUserId
-                    );
-                    // highlight style for assigned KRs
-                    const highlightClass = isMine
-                      ? "bg-blue-50 shadow-md border-blue-200"
-                      : "bg-gray-50";
-                    return (
-                      <div
-                        key={kr.id}
-                        className={`p-3 rounded-lg space-y-3 border ${highlightClass}`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="max-w-[75%]">
-                            <div className="font-medium">{kr.title}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {kr.current_value} / {kr.target_value}{" "}
-                              {kr.units ?? ""}
-                            </div>
-
-                            <div className="mt-2 mb-2 text-sm">Progress</div>
-                            <div className="flex items-center gap-3">
-                              <Progress
-                                value={Math.max(
-                                  0,
-                                  Math.min(100, krPercent(kr))
-                                )}
-                                className="h-2 flex-1"
-                              />
-                              <div className="text-sm">{krPercent(kr)}%</div>
-                            </div>
-
-                            {kr.description ? (
-                              <div className="mt-3 p-3 bg-white rounded text-sm text-gray-700">
-                                {kr.description}
-                              </div>
-                            ) : null}
-                          </div>
-
-                          <div className="flex flex-col items-end gap-3">
-                            <Badge className="bg-emerald-100 text-emerald-800">
-                              {kr.status ?? "On Track"}
-                            </Badge>
-                            <div className="text-xs text-muted-foreground">
-                              Assigned:{" "}
-                              {kr.assigned_to
-                                ? membersMap[kr.assigned_to] ?? kr.assigned_to
-                                : "—"}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          {/* If user is employee and this KR is assigned to them -> Check In flow */}
-                          {isEmployee && isMine ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setActiveKR({
-                                  id: kr.id,
-                                  title: kr.title,
-                                  current_value: kr.current_value,
-                                  target_value: kr.target_value,
-                                  units: kr.units,
-                                });
-                                setCheckInModalOpen(true);
-                              }}
-                              disabled={loadingAction}
-                            >
-                              Check In
-                            </Button>
-                          ) : (
-                            !isEmployee && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setActiveKR({
-                                    id: kr.id,
-                                    title: kr.title,
-                                    current_value: kr.current_value,
-                                    target_value: kr.target_value,
-                                    units: kr.units,
-                                  });
-                                  setUpdateModalOpen(true);
-                                }}
-                                disabled={loadingAction}
-                              >
-                                Update Progress
-                              </Button>
-                            )
-                          )}
-
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              // toggle specific kr comment input
-                              setCommentOpenId((prev) =>
-                                prev === kr.id ? null : kr.id
-                              );
-                              // focus textarea after a tick
-                              setTimeout(() => {
-                                document
-                                  .getElementById(`kr-comment-${kr.id}`)
-                                  ?.focus();
-                              }, 50);
-                            }}
-                          >
-                            Comment
-                          </Button>
-                        </div>
-
-                        {commentOpenId === kr.id && (
-                          <div className="pt-2">
-                            <Textarea
-                              id={`kr-comment-${kr.id}`}
-                              value={commentText[kr.id] ?? ""}
-                              onChange={(e) =>
-                                setCommentText((s) => ({
-                                  ...s,
-                                  [kr.id]: e.target.value,
-                                }))
-                              }
-                              placeholder="Add a comment..."
-                              rows={2}
-                            />
-                            <div className="flex justify-end pt-2">
-                              <Button
-                                size="sm"
-                                onClick={() => postComment(kr.id)}
-                                disabled={loadingAction || !commentText[kr.id]}
-                              >
-                                {loadingAction ? "Posting..." : "Post Comment"}
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
+            {expanded &&
+              krs.map((kr) => {
+                const isMine = !!(
+                  kr.assigned_to && kr.assigned_to === currentUserId
+                );
+                // highlight style for assigned KRs
+                const highlightClass = isMine
+                  ? "bg-blue-50 shadow-md border-blue-200"
+                  : "bg-gray-50";
+                return (
+                  <KeyResultCard
+                    key={kr.id}
+                    kr={kr}
+                    isMine={isMine}
+                    isEmployee={isEmployee}
+                    membersMap={membersMap}
+                    currentUserId={currentUserId}
+                    loadingAction={loadingAction}
+                    setLoadingAction={setLoadingAction}
+                    commentText={commentText}
+                    setCommentText={setCommentText}
+                    commentOpenId={commentOpenId}
+                    setCommentOpenId={setCommentOpenId}
+                    setActiveKR={setActiveKR}
+                    setUpdateModalOpen={setUpdateModalOpen}
+                    setCheckInModalOpen={setCheckInModalOpen}
+                  />
+                );
+              })}
           </div>
 
           {/* only show edit objective action for non-employees */}
@@ -495,12 +356,6 @@ export default function ObjectiveCard({
   );
 }
 
-/* ------------------------------
-   Inline CheckInModal component
-   ------------------------------
-   Minimal, self-contained modal so you don't need extra imports.
-   Uses Tailwind; feel free to replace with your dialog component.
-*/
 function CheckInModal({
   open,
   onOpenChange,

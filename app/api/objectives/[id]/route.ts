@@ -9,7 +9,7 @@ import { Role } from "@/app/api/types/auth/roles";
 async function loadObjective(id: string) {
   return supabase
     .from("objectives")
-    .select("*, team:team_id(id, organization_id)")
+    .select("*, team:team_id(id,name, organization_id)")
     .eq("id", id)
     .single();
 }

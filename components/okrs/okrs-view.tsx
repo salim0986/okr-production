@@ -10,12 +10,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Plus, Target } from "lucide-react";
 import { CreateObjectiveDialog } from "./create-objective-dialog";
 import { EditObjectiveDialog } from "./edit-objective-dialog";
-import ObjectiveCard from "@/components/okrs/key-result-card";
+import ObjectiveCard from "@/components/okrs/objective-card";
 
 interface Objective {
   id: string;
@@ -24,15 +22,10 @@ interface Objective {
   progress: number;
   status: string;
   end_date?: string | null;
-  team_id?: string | null;
-  created_by?: string | null;
-  // optional if backend already includes key results
-  keyResults?: Array<{
+  team: {
+    name: string;
     id: string;
-    title: string;
-    target_value: number;
-    current_value: number;
-  }>;
+  };
 }
 
 export function OKRsView() {

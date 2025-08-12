@@ -9,29 +9,28 @@ export const POST = requireAuth(
   [Role.ORG_ADMIN],
   async (req: NextRequest, user: UserPayload) => {
     const body = await req.json();
+    console.log(body);
     const { name, email, password, role, team_id } = body;
 
     // Validate role
     if (![Role.TEAM_LEAD, Role.EMPLOYEE].includes(role)) {
-      return new NextResponse(
-        JSON.stringify({
-          error: "Invalid role; must be team_lead or employee",
-        }),
+      return NextResponse.json(
+        { error: "Invalid role; must be team_lead or employee" },
         { status: 400 }
       );
     }
 
     // Validate required fields
     if (!name || !email || !password || !team_id) {
-      return new NextResponse(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           error: "Missing required fields: name, email, password, team_id",
-        }),
+        },
         { status: 400 }
       );
     }
 
-    // Verify that team exists in admin's organization
+    // Verify team exists
     const { data: team, error: teamError } = await supabase
       .from("teams")
       .select("id, lead_id")
@@ -40,17 +39,36 @@ export const POST = requireAuth(
       .single();
 
     if (teamError || !team) {
-      return new NextResponse(
-        JSON.stringify({ error: "Team not found or not in your organization" }),
+      return NextResponse.json(
+        { error: "Team not found or not in your organization" },
         { status: 404 }
       );
+    }
+
+    // If role is team_lead, demote existing lead if they exist
+    if (role === Role.TEAM_LEAD && team.lead_id) {
+      const { error: demoteError } = await supabase
+        .from("users")
+        .update({ role: Role.EMPLOYEE })
+        .eq("id", team.lead_id)
+        .eq("organization_id", user.organization_id);
+
+      if (demoteError) {
+        return NextResponse.json(
+          {
+            error: "Failed to demote existing team lead",
+            details: demoteError.message,
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create the user
-    const { data: users, error: userError } = await supabase
+    // Create the new user
+    const { data: newUser, error: userError } = await supabase
       .from("users")
       .insert([
         {
@@ -65,9 +83,9 @@ export const POST = requireAuth(
       .select("id, name, email, role, team_id")
       .single();
 
-    if (userError || !users) {
-      return new NextResponse(
-        JSON.stringify({ error: userError?.message || "User creation failed" }),
+    if (userError || !newUser) {
+      return NextResponse.json(
+        { error: userError?.message || "User creation failed" },
         { status: 500 }
       );
     }
@@ -76,25 +94,24 @@ export const POST = requireAuth(
     if (role === Role.TEAM_LEAD) {
       const { error: updateError } = await supabase
         .from("teams")
-        .update({ lead_id: users.id })
+        .update({ lead_id: newUser.id })
         .eq("id", team_id)
         .eq("organization_id", user.organization_id);
 
       if (updateError) {
-        // Roll back user creation if you want, or just warn
-        return new NextResponse(
-          JSON.stringify({
+        return NextResponse.json(
+          {
             message: "User created but failed to set team lead on team",
-            user: users,
+            user: newUser,
             error: updateError.message,
-          }),
+          },
           { status: 500 }
         );
       }
     }
 
-    return new NextResponse(
-      JSON.stringify({ message: "User created successfully", user: users }),
+    return NextResponse.json(
+      { message: "User created successfully", user: newUser },
       { status: 201 }
     );
   }

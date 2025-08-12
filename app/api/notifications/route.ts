@@ -10,7 +10,9 @@ export const GET = requireAuth(
   async (_req, user: UserPayload) => {
     const { data, error } = await supabase
       .from("notifications")
-      .select("*")
+      .select(
+        "title,message,is_read, created_at, type, user:user_id(name, role)"
+      )
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 

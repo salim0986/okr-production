@@ -13,16 +13,18 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (!user || error) {
-    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Invalid or existing credentials" },
+      { status: 401 }
+    );
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) {
-    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    return NextResponse.json({ error: "Invalid Password!" }, { status: 401 });
   }
 
-  // Update last_login to current timestamp
   await supabase
     .from("users")
     .update({ last_login: new Date().toISOString() })

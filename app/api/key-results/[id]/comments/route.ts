@@ -74,7 +74,7 @@ export const GET = requireAuth(
 
     const { data, error } = await supabase
       .from("comments")
-      .select("id, user_id, text, created_at")
+      .select("id, user:user_id(id, name, role), text, created_at")
       .eq("key_result_id", keyResultId)
       .order("created_at", { ascending: false });
 

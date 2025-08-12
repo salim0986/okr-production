@@ -17,12 +17,11 @@ import {
 import {
   LayoutDashboard,
   Target,
-  Calendar,
   Users,
-  BarChart3,
+  Group,
   Settings,
   Bell,
-  Building2,
+  CheckCircle,
 } from "lucide-react";
 
 const menuItems = [
@@ -39,23 +38,17 @@ const menuItems = [
     roles: ["admin", "team_lead", "employee"],
   },
   {
-    title: "Calendar",
-    url: "/calendar",
-    icon: Calendar,
+    title: "Teams",
+    url: "/teams",
+    icon: Group,
     roles: ["admin", "team_lead", "employee"],
   },
   {
-    title: "Teams",
-    url: "/teams",
+    title: "Users",
+    url: "/users",
     icon: Users,
-    roles: ["admin", "team_lead"],
+    roles: ["admin"],
   },
-  // {
-  //   title: "Reports",
-  //   url: "/reports",
-  //   icon: BarChart3,
-  //   roles: ["admin", "team_lead"],
-  // },
   {
     title: "Notifications",
     url: "/notifications",
@@ -68,13 +61,30 @@ const menuItems = [
     icon: Settings,
     roles: ["admin", "team_lead", "employee"],
   },
+  {
+    title: "Checkins",
+    url: "/checkins",
+    icon: CheckCircle,
+    roles: ["employee"],
+  },
 ];
 
 export function AppSidebar() {
   const { user } = useAuth();
   const pathname = usePathname();
 
-  const filteredMenuItems = menuItems.filter(
+  // Apply role-based title changes
+  const updatedMenuItems = menuItems.map((item) => {
+    if (
+      item.title === "Teams" &&
+      (user?.role === "team_lead" || user?.role === "employee")
+    ) {
+      return { ...item, title: "My Team" };
+    }
+    return item;
+  });
+
+  const filteredMenuItems = updatedMenuItems.filter(
     (item) => user?.role && item.roles.includes(user.role)
   );
 
@@ -91,16 +101,27 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filteredMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {filteredMenuItems.map((item) => {
+                const isActive = pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      className={`rounded-md transition-colors ${
+                        isActive
+                          ? "bg-primary text-white hover:bg-primary/90"
+                          : "hover:bg-gray-100"
+                      }`}
+                    >
+                      <Link href={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

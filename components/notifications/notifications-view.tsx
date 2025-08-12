@@ -19,7 +19,7 @@ interface Notification {
   message: string;
   type: "info" | "success" | "warning" | "error";
   is_read: boolean;
-  createdAt: string;
+  created_at: string;
 }
 
 export function NotificationsView() {
@@ -117,11 +117,19 @@ export function NotificationsView() {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "success":
+      case "comment":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case "warning":
+      case "completed":
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case "progress_update":
         return <AlertCircle className="h-5 w-5 text-yellow-500" />;
-      case "error":
+      case "meeting_reminder":
+        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
+      case "deadline_approaching":
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
+      case "blocker":
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
+      case "follow_up":
         return <AlertCircle className="h-5 w-5 text-red-500" />;
       default:
         return <Info className="h-5 w-5 text-blue-500" />;
@@ -130,11 +138,19 @@ export function NotificationsView() {
 
   const getNotificationBadgeVariant = (type: string) => {
     switch (type) {
-      case "success":
+      case "comment":
         return "default";
-      case "warning":
+      case "completed":
+        return "default";
+      case "progress_update":
         return "secondary";
-      case "error":
+      case "meeting_reminder":
+        return "secondary";
+      case "deadline_approaching":
+        return "destructive";
+      case "blocker":
+        return "destructive";
+      case "follow_up":
         return "destructive";
       default:
         return "outline";
@@ -234,7 +250,7 @@ export function NotificationsView() {
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(notification.createdAt).toLocaleString()}
+                        {new Date(notification.created_at).toLocaleString()}
                       </p>
                     </div>
                   </div>

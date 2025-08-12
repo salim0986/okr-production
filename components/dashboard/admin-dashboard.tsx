@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { toast } from "../ui/use-toast";
 
 interface QuickStats {
   totalTeams: number;
@@ -54,6 +55,7 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<InactiveUser[]>([]);
   const { user } = useAuth();
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
     const fetchDashboardQuickData = async () => {
@@ -128,6 +130,39 @@ export function AdminDashboard() {
     };
     fetchInactiveUsers();
   }, []);
+
+  const sendNotification = async (id: string, name: string) => {
+    try {
+      const res = await fetch(`/api/notifications`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        method: "POST",
+        body: JSON.stringify({
+          title: "Follow Up",
+          message: `Hello ${name}, this is to notify you, that you are being inactive for more than 7 days. Kindly be more active on active operations.`,
+          type: "follow_up",
+          target: {
+            type: "user",
+            ids: [id],
+          },
+        }),
+      });
+      if (!res.ok) {
+        toast({
+          title: "Error",
+          description: "Failed to follow up, there are errors",
+          variant: "destructive",
+        });
+      }
+
+      toast({
+        title: "Success",
+        description: "Followed up user successfully",
+        variant: "default",
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   if (loading) {
     return (
@@ -299,7 +334,10 @@ export function AdminDashboard() {
                   <span className="text-sm text-gray-500">
                     {user.last_login.substring(0, 10)}
                   </span>
-                  <button className="text-sm font-medium text-indigo-600 hover:underline">
+                  <button
+                    onClick={() => sendNotification(user.id, user.name)}
+                    className="text-sm font-medium text-indigo-600 hover:underline"
+                  >
                     Follow Up
                   </button>
                 </div>

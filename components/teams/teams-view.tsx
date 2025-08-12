@@ -285,7 +285,9 @@ export function TeamsView() {
                 : members.map((m) => (
                     <TableRow key={m.id}>
                       <TableCell className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-gray-200" />
+                        <div className="h-8 w-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-semibold">
+                          {m.member?.name?.charAt(0).toUpperCase() ?? "?"}
+                        </div>
                         <div>
                           <div className="font-medium">{m.member.name}</div>
                           <div className="text-sm text-gray-500">
@@ -293,7 +295,7 @@ export function TeamsView() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{m.team}</TableCell>
+                      <TableCell>{m.team || "_____"}</TableCell>
                       <TableCell>{m.okrs}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

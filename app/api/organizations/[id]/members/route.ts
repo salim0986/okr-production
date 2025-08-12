@@ -30,6 +30,7 @@ export const GET = requireAuth(
         `
         id,
         name,
+        email,
         title,
         last_login,
         team:team_id(name),
@@ -90,6 +91,7 @@ export const GET = requireAuth(
 
       return {
         id: u.id,
+        email: u.email,
         member: { name: u.name, title: u.title },
         team: u.team?.name,
         okrs,

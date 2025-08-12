@@ -1,12 +1,12 @@
 "use client";
 
 import { MainLayout } from "@/components/layout/main-layout";
-import { ReportsView } from "@/components/reports/reports-view";
+import { UsersView } from "@/components/users/users-view";
 
-export default function ReportsPage() {
+export default function TeamsPage() {
   return (
     <MainLayout>
-      <ReportsView />
+      <UsersView />
     </MainLayout>
   );
 }

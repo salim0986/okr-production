@@ -28,7 +28,7 @@ export const GET = requireAuth(
     const { data, error } = await supabase
       .from("objectives")
       .select(
-        "id, title, description, team_id, start_date, end_date, progress, status, created_at"
+        "id, title, description, team:team_id(id,name), start_date, end_date, progress, status, created_at"
       )
       .in("team_id", teamIds);
 
