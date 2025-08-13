@@ -10,14 +10,14 @@ interface DecodedToken {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: string; // Your app role stays here
   organization_id?: string;
   team_id: string;
-  // Add other fields from your token payload if needed
 }
 
 interface AuthContextType {
   user: DecodedToken | null;
+  setUser: React.Dispatch<React.SetStateAction<DecodedToken | null>>;
   login: (email: string, password: string) => Promise<void>;
   register: (
     name: string,
@@ -28,51 +28,60 @@ interface AuthContextType {
   ) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
+  supabaseToken: string | null; // For Supabase Auth
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<DecodedToken | null>(null);
+  const [supabaseToken, setSupabaseToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Check for existing session
     const token = localStorage.getItem("token");
+    const sbToken = localStorage.getItem("supabaseToken");
     const userData = localStorage.getItem("user");
 
     if (token && userData) {
       try {
         setUser(JSON.parse(userData));
-      } catch (error) {
+      } catch {
         localStorage.removeItem("token");
+        localStorage.removeItem("supabaseToken");
         localStorage.removeItem("user");
       }
     }
+
+    if (sbToken) {
+      setSupabaseToken(sbToken);
+    }
+
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) {
-        throw new Error("Login failed");
-      }
+      if (!res.ok) throw new Error("Login failed");
 
-      const data = await response.json();
+      const data = await res.json();
+      console.log(data);
+
       const decodedUser: DecodedToken = jwtDecode(data.token);
 
       localStorage.setItem("token", data.token);
+      localStorage.setItem("supabaseToken", data.supabaseToken); // new
       localStorage.setItem("user", JSON.stringify(decodedUser));
+
       setUser(decodedUser);
+      setSupabaseToken(data.supabaseToken);
 
       router.push("/dashboard");
     } catch (error) {
@@ -88,24 +97,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role: UserRole
   ) => {
     try {
-      const response = await fetch("/api/auth/register", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, orgName, email, password, role }),
       });
 
-      if (!response.ok) {
-        throw new Error("Registration failed");
-      }
+      if (!res.ok) throw new Error("Registration failed");
 
-      const data = await response.json();
+      const data = await res.json();
+
       const decodedUser: DecodedToken = jwtDecode(data.token);
 
       localStorage.setItem("token", data.token);
+      localStorage.setItem("supabaseToken", data.supabaseToken); // new
       localStorage.setItem("user", JSON.stringify(decodedUser));
+
       setUser(decodedUser);
+      setSupabaseToken(data.supabaseToken);
 
       router.push("/dashboard");
     } catch (error) {
@@ -115,13 +124,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("supabaseToken");
     localStorage.removeItem("user");
     setUser(null);
+    setSupabaseToken(null);
     router.push("/auth/login");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        setUser,
+        login,
+        register,
+        logout,
+        isLoading,
+        supabaseToken,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -129,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;

@@ -2,18 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+
 import { Target, Calendar, MessageSquare, TrendingUp } from "lucide-react";
 import { OKRsView } from "../okrs/okrs-view";
 
@@ -122,7 +111,7 @@ export function EmployeeDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {Math.round(insights.avgProgress * 100)}%
+                {Math.round(insights.avgProgress)}%
               </div>
             </CardContent>
           </Card>
@@ -155,33 +144,6 @@ export function EmployeeDashboard() {
           </Card>
         </div>
       )}
-      {/* My OKRs */}
-      <OKRsView />
-      {/* Check In Modal
-      <Dialog
-        open={checkInModal.open}
-        onOpenChange={(open) => setCheckInModal({ open, krId: null })}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Check In</DialogTitle>
-          </DialogHeader>
-          <Input
-            type="number"
-            placeholder="Progress value"
-            value={checkInProgress}
-            onChange={(e) => setCheckInProgress(e.target.value)}
-          />
-          <Textarea
-            placeholder="Comment"
-            value={checkInComment}
-            onChange={(e) => setCheckInComment(e.target.value)}
-          />
-          <DialogFooter>
-            <Button onClick={handleCheckIn}>Submit</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog> */}
     </div>
   );
 }

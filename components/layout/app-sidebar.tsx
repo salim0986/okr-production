@@ -56,16 +56,16 @@ const menuItems = [
     roles: ["admin", "team_lead", "employee"],
   },
   {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-    roles: ["admin", "team_lead", "employee"],
-  },
-  {
     title: "Checkins",
     url: "/checkins",
     icon: CheckCircle,
     roles: ["employee"],
+  },
+  {
+    title: "Settings",
+    url: "/settings",
+    icon: Settings,
+    roles: ["admin", "team_lead", "employee"],
   },
 ];
 

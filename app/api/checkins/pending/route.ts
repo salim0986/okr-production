@@ -7,8 +7,8 @@ import { UserPayload } from "@/app/api/types/auth/authTypes";
 
 export interface PendingCheckIn {
   id: string;
-  key_result_id: string;
-  user_id: string;
+  key_result: { id: string; name: string }[];
+  user: { id: string; name: string }[];
   progress_value: number;
   comment: string | null;
   check_in_date: string;
@@ -54,8 +54,8 @@ export const GET = requireAuth(
       .from("check_ins")
       .select(
         `id,
-         key_result_id,
-         user_id,
+         key_result:key_result_id(id,name),
+         user:user_id(id,name),
          progress_value,
          comment,
          check_in_date,

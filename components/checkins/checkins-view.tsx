@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "lucide-react";
+import { Badge } from "../ui/badge";
 
 type KeyResult = {
   id: string;

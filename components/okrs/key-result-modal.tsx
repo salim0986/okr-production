@@ -152,7 +152,7 @@ export default function KeyResultCard({
             {kr.status ?? "On Track"}
           </Badge>
           <div className="text-xs text-muted-foreground">
-            Assigned:{" "}
+            Assigned To:{" "}
             {kr.assigned_to
               ? membersMap[kr.assigned_to] ?? kr.assigned_to
               : "—"}
@@ -161,7 +161,7 @@ export default function KeyResultCard({
       </div>
 
       <div className="flex gap-2">
-        {isEmployee && isMine ? (
+        {isEmployee && isMine && kr.current_value < kr.target_value ? (
           <Button
             variant="outline"
             size="sm"

@@ -29,7 +29,10 @@ export function requireAuth(
       }
 
       const token = authHeader.split(" ")[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as UserPayload;
+      const decoded = jwt.verify(
+        token,
+        process.env.NEXT_PUBLIC_JWT_SECRET!
+      ) as UserPayload;
 
       if (!rolesArray.includes(decoded.role)) {
         return NextResponse.json(

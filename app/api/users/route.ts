@@ -9,7 +9,6 @@ export const POST = requireAuth(
   [Role.ORG_ADMIN],
   async (req: NextRequest, user: UserPayload) => {
     const body = await req.json();
-    console.log(body);
     const { name, email, password, role, team_id } = body;
 
     // Validate role
@@ -76,12 +75,12 @@ export const POST = requireAuth(
           email,
           password: hashedPassword,
           role,
-          team_id,
+          team_id: team.id,
           organization_id: user.organization_id,
         },
       ])
-      .select("id, name, email, role, team_id")
-      .single();
+      .select("id, name, email, role, team:team_id(name)")
+      .maybeSingle();
 
     if (userError || !newUser) {
       return NextResponse.json(
@@ -110,9 +109,6 @@ export const POST = requireAuth(
       }
     }
 
-    return NextResponse.json(
-      { message: "User created successfully", user: newUser },
-      { status: 201 }
-    );
+    return NextResponse.json(newUser, { status: 201 });
   }
 );

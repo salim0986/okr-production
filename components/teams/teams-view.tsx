@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 interface Team {
   id: string;
@@ -80,13 +81,16 @@ function statusLabel(status: string) {
 }
 
 export function TeamsView() {
-  const [activeTab, setActiveTab] = useState<"teams" | "members">("teams");
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<"teams" | "members">(
+    user?.role === "admin" ? "teams" : "members"
+  );
   const [teams, setTeams] = useState<Team[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [open, setOpen] = useState<boolean>(false);
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [loadingMembers, setLoadingMembers] = useState(false);
-  const { user } = useAuth();
   useEffect(() => {
     if (!user?.organization_id) return;
 
@@ -128,8 +132,17 @@ export function TeamsView() {
           },
         });
       }
+
+      if (!res.ok) {
+        toast({
+          title: "Failed",
+          description: "Failed to fetch members, try again...",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const data: Member[] = await res.json();
-      console.log(data);
       setMembers(data);
       setLoadingMembers(false);
     };
@@ -145,28 +158,32 @@ export function TeamsView() {
           <h2 className="text-3xl font-bold">Teams & People</h2>
           <p>Manage teams and track members performance</p>
         </div>
-        <div>
-          <Button variant="default" onClick={() => setOpen(true)}>
-            + Create Team
-          </Button>
-        </div>
+        {user?.role === "admin" && (
+          <div>
+            <Button variant="default" onClick={() => setOpen(true)}>
+              + Create Team
+            </Button>
+          </div>
+        )}
       </div>
-      <div className="flex gap-2">
-        <Button
-          variant={activeTab === "teams" ? "default" : "outline"}
-          onClick={() => setActiveTab("teams")}
-        >
-          Teams
-        </Button>
-        {
+      {user?.role === "admin" && (
+        <div className="flex gap-2">
           <Button
-            variant={activeTab === "members" ? "default" : "outline"}
-            onClick={() => setActiveTab("members")}
+            variant={activeTab === "teams" ? "default" : "outline"}
+            onClick={() => setActiveTab("teams")}
           >
-            All Members
+            Teams
           </Button>
-        }
-      </div>
+          {
+            <Button
+              variant={activeTab === "members" ? "default" : "outline"}
+              onClick={() => setActiveTab("members")}
+            >
+              All Members
+            </Button>
+          }
+        </div>
+      )}
 
       {/* Teams View */}
       {activeTab === "teams" && (

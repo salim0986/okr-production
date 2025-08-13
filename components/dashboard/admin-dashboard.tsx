@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Users, Target, TrendingUp, Building2, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
+
 import {
   Table,
   TableBody,
@@ -20,19 +22,12 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { toast } from "../ui/use-toast";
 
 interface QuickStats {
   totalTeams: number;
   activeOkrs: number;
   avgCompletion: number;
   atRiskOkrs: number;
-  recentActivity: Array<{
-    id: string;
-    type: string;
-    description: string;
-    timestamp: string;
-  }>;
 }
 
 interface TableStats {
@@ -56,6 +51,7 @@ export function AdminDashboard() {
   const [users, setUsers] = useState<InactiveUser[]>([]);
   const { user } = useAuth();
   const token = localStorage.getItem("token");
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchDashboardQuickData = async () => {
@@ -156,8 +152,7 @@ export function AdminDashboard() {
 
       toast({
         title: "Success",
-        description: "Followed up user successfully",
-        variant: "default",
+        description: "User followed up successfully",
       });
     } catch (error) {
       console.log(error);
@@ -290,10 +285,10 @@ export function AdminDashboard() {
                         <TableCell>{row.members}</TableCell>
                         <TableCell>
                           <div className="w-[100px]">
-                            <Progress value={row.completion} />
                             <span className="text-xs text-muted-foreground">
                               {row.completion}%
                             </span>
+                            <Progress value={row.completion} />
                           </div>
                         </TableCell>
                         <TableCell>

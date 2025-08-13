@@ -409,7 +409,7 @@ function CheckInModal({
           <input
             type="number"
             min={0}
-            max={100}
+            max={kr.target_value}
             value={value}
             onChange={(e) => setValue(Number(e.target.value))}
             className="w-full p-2 border rounded"

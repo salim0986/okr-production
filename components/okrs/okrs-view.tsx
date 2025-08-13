@@ -2,18 +2,13 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Target } from "lucide-react";
 import { CreateObjectiveDialog } from "./create-objective-dialog";
 import { EditObjectiveDialog } from "./edit-objective-dialog";
 import ObjectiveCard from "@/components/okrs/objective-card";
+import { cn } from "@/lib/utils"; // helper for conditional classes
 
 interface Objective {
   id: string;
@@ -40,6 +35,9 @@ export function OKRsView() {
     null
   );
 
+  // filter state
+  const [filter, setFilter] = useState<"active" | "completed">("active");
+
   const fetchObjectives = useCallback(async () => {
     setLoading(true);
     try {
@@ -62,7 +60,7 @@ export function OKRsView() {
     }
   }, []);
 
-  // fetch org members to map created_by -> name
+  // fetch org members
   useEffect(() => {
     if (!organizationId) return;
     const token =
@@ -94,24 +92,17 @@ export function OKRsView() {
     fetchObjectives();
   }, [fetchObjectives]);
 
-  const getStatusVariant = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "on track":
-      case "on_track":
-        return "default";
-      case "at risk":
-      case "at_risk":
-        return "destructive";
-      case "completed":
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
+  // filtered objectives based on current filter
+  const filteredObjectives = objectives.filter((obj) =>
+    filter === "active"
+      ? obj.status?.toLowerCase() !== "completed"
+      : obj.status?.toLowerCase() === "completed"
+  );
 
   if (loading) {
     return (
       <div className="space-y-6">
+        {/* header */}
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Team OKRs</h2>
@@ -126,17 +117,13 @@ export function OKRsView() {
             </Button>
           )}
         </div>
-
+        {/* fake loading cards */}
         <div className="grid gap-4">
           {[...Array(3)].map((_, i) => (
             <Card key={i}>
-              <CardHeader>
-                <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-              </CardHeader>
               <CardContent>
-                <div className="h-4 bg-gray-200 rounded w-full animate-pulse mb-4"></div>
-                <div className="h-2 bg-gray-200 rounded w-full animate-pulse"></div>
+                <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
               </CardContent>
             </Card>
           ))}
@@ -146,7 +133,7 @@ export function OKRsView() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ">
       {/* header */}
       <div className="flex justify-between items-center">
         <div>
@@ -155,7 +142,6 @@ export function OKRsView() {
             Track and manage objectives and key results
           </p>
         </div>
-
         {(user?.role === "admin" || user?.role === "team_lead") && (
           <Button onClick={() => setShowCreateDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -164,23 +150,44 @@ export function OKRsView() {
         )}
       </div>
 
+      {/* filter tabs */}
+      <div className="flex space-x-2 border-b pb-2">
+        <button
+          onClick={() => setFilter("active")}
+          className={cn(
+            "px-4 py-1 rounded-md text-sm font-medium",
+            filter === "active"
+              ? "bg-primary text-white"
+              : "text-muted-foreground hover:bg-gray-100"
+          )}
+        >
+          Active Objectives
+        </button>
+        <button
+          onClick={() => setFilter("completed")}
+          className={cn(
+            "px-4 py-1 rounded-md text-sm font-medium",
+            filter === "completed"
+              ? "bg-primary text-white"
+              : "text-muted-foreground hover:bg-gray-100"
+          )}
+        >
+          Completed
+        </button>
+      </div>
+
+      {/* objectives list */}
       <div className="space-y-4">
-        {objectives.length > 0 ? (
-          objectives.map((objective) => (
-            // Use ObjectiveCard to show each objective plus its key results (it will fetch KR if needed)
+        {filteredObjectives.length > 0 ? (
+          filteredObjectives.map((objective) => (
             <ObjectiveCard
               key={objective.id}
               objective={objective}
               membersMap={membersMap}
-              onUpdated={() => {
-                // refresh parent objectives (so overall progress/status updates)
-                fetchObjectives();
-              }}
+              onUpdated={fetchObjectives}
               setEditingObjectiveId={setEditingObjectiveId}
               setShowEditDialog={setShowEditDialog}
-            >
-              {/* keep compatibility: Edit button still controlled from parent */}
-            </ObjectiveCard>
+            />
           ))
         ) : (
           <Card>
@@ -188,7 +195,9 @@ export function OKRsView() {
               <Target className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No objectives found</h3>
               <p className="text-muted-foreground text-center mb-4">
-                Get started by creating your first objective and key results.
+                {filter === "active"
+                  ? "Get started by creating your first active objective."
+                  : "No completed objectives yet."}
               </p>
               {(user?.role === "admin" || user?.role === "team_lead") && (
                 <Button onClick={() => setShowCreateDialog(true)}>
@@ -201,26 +210,24 @@ export function OKRsView() {
         )}
       </div>
 
+      {/* dialogs */}
       <CreateObjectiveDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         organizationId={organizationId || ""}
-        onObjectiveCreated={() => {
-          fetchObjectives();
-        }}
+        onObjectiveCreated={fetchObjectives}
       />
-
       {editingObjectiveId && (
         <EditObjectiveDialog
           open={showEditDialog}
           onOpenChange={(open) => {
             setShowEditDialog(open);
-            if (!open) setEditingObjectiveId(null); // clear id when dialog closes
+            if (!open) setEditingObjectiveId(null);
           }}
           objectiveId={editingObjectiveId}
           organizationId={organizationId || ""}
           onObjectiveUpdated={() => {
-            fetchObjectives(); // refresh list after edit
+            fetchObjectives();
             setShowEditDialog(false);
             setEditingObjectiveId(null);
           }}

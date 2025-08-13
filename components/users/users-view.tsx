@@ -164,6 +164,10 @@ function CreateUserFormModal({
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  // New state for success modal
+  const [newUser, setNewUser] = useState<any | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
   useEffect(() => {
     if (!user?.organization_id) return;
     const fetchTeams = async () => {
@@ -188,13 +192,7 @@ function CreateUserFormModal({
     setSubmitting(true);
     const token = localStorage.getItem("token");
 
-    const payload: any = {
-      name: formData.name,
-      role: formData.role,
-      email: formData.email,
-      password: formData.password,
-      team_id: formData.team_id,
-    };
+    const payload = { ...formData };
 
     const res = await fetch("/api/users", {
       method: "POST",
@@ -204,9 +202,19 @@ function CreateUserFormModal({
       },
       body: JSON.stringify(payload),
     });
-    console.log(res);
-    if (!res.ok) throw new Error("Failed to create user");
 
+    if (!res.ok) throw new Error("Failed to create user");
+    const createdUser = await res.json();
+
+    // Store created user info & show modal
+    setNewUser({
+      ...createdUser,
+      password: formData.password,
+      team_name: createdUser.team.name,
+    });
+    setShowSuccessModal(true);
+
+    // Reset form
     setFormData({
       name: "",
       role: "employee",
@@ -218,101 +226,164 @@ function CreateUserFormModal({
     setOpen(false);
   };
 
+  const copyToClipboard = () => {
+    if (newUser) {
+      const text = `
+      Here is the credential for new user:
+
+      Name: ${newUser.name}
+      Email: ${newUser.email}
+      Password: ${newUser.password}
+      Role: ${newUser.role}
+      Team: ${newUser.team_name || "N/A"}
+            `.trim();
+      navigator.clipboard.writeText(text);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Create a New User</DialogTitle>
-          <DialogDescription>
-            Fill in the details to add a new member to your organization.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label>Name</Label>
-            <Input
-              name="name"
-              value={formData.name}
-              onChange={(e) => handleChange(e.target.name, e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Label>Email</Label>
-            <Input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={(e) => handleChange(e.target.name, e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Label>Password</Label>
-            <Input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={(e) => handleChange(e.target.name, e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Label>Role</Label>
-            <Select
-              value={formData.role}
-              onValueChange={(val) => handleChange("role", val)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="team_lead">Team Lead</SelectItem>
-                <SelectItem value="employee">Employee</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Team</Label>
-            <Select
-              value={formData.team_id}
-              onValueChange={(val) => handleChange("team_id", val)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select team" />
-              </SelectTrigger>
-              <SelectContent>
-                {loadingTeams ? (
-                  <SelectItem value="" disabled>
-                    Loading...
-                  </SelectItem>
-                ) : (
-                  teams.map((team) => (
-                    <SelectItem key={team.id} value={team.id}>
-                      {team.name}
+    <>
+      {/* Create User Modal */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create a New User</DialogTitle>
+            <DialogDescription>
+              Fill in the details to add a new member to your organization.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label>Name</Label>
+              <Input
+                name="name"
+                value={formData.name}
+                onChange={(e) => handleChange(e.target.name, e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={(e) => handleChange(e.target.name, e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label>Password</Label>
+              <Input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={(e) => handleChange(e.target.name, e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label>Role</Label>
+              <Select
+                value={formData.role}
+                onValueChange={(val) => handleChange("role", val)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="team_lead">Team Lead</SelectItem>
+                  <SelectItem value="employee">Employee</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Team</Label>
+              <Select
+                value={formData.team_id}
+                onValueChange={(val) => handleChange("team_id", val)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {loadingTeams ? (
+                    <SelectItem value="" disabled>
+                      Loading...
                     </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          <p className="text-xs text-gray-700 m-2">
-            Note: Existing team leader will be demoted.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Creating" : "Create"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+                  ) : (
+                    teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            {formData.role === "team_lead" && (
+              <p className="text-xs text-gray-700 m-2">
+                Note: Existing team leader will be demoted.
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setOpen(false);
+                  setFormData({
+                    name: "",
+                    role: "employee",
+                    email: "",
+                    password: "",
+                    team_id: "",
+                  });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Creating..." : "Create"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>User Created Successfully</DialogTitle>
+            <DialogDescription>
+              Here are the details of the new user:
+            </DialogDescription>
+          </DialogHeader>
+          {newUser && (
+            <div className="space-y-2 text-sm">
+              <p>
+                <strong>Name:</strong> {newUser.name}
+              </p>
+              <p>
+                <strong>Email:</strong> {newUser.email}
+              </p>
+              <p>
+                <strong>Password:</strong> {newUser.password}
+              </p>
+              <p>
+                <strong>Role:</strong> {newUser.role}
+              </p>
+              {newUser.team_name && (
+                <p>
+                  <strong>Team:</strong> {newUser.team_name}
+                </p>
+              )}
+            </div>
+          )}
+          <Button onClick={copyToClipboard}>Copy to Clipboard</Button>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
