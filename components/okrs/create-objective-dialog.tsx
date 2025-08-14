@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Construction, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 interface CreateObjectiveDialogProps {
   open: boolean;
@@ -34,6 +35,7 @@ export function CreateObjectiveDialog({
   organizationId,
   onObjectiveCreated,
 }: CreateObjectiveDialogProps) {
+  const { toast } = useToast();
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -70,6 +72,11 @@ export function CreateObjectiveDialog({
         }
       } catch (err) {
         console.error("fetch teams error", err);
+        toast({
+          title: "Error",
+          description: "Failed to fetch teams",
+          variant: "destructive",
+        });
       }
     };
     if (user?.role == "admin") {
@@ -89,6 +96,11 @@ export function CreateObjectiveDialog({
         }
       } catch (error) {
         console.log("fetch members error", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch members",
+          variant: "destructive",
+        });
       }
     };
     fetchMembers();
@@ -131,7 +143,12 @@ export function CreateObjectiveDialog({
 
       if (!res.ok) {
         const txt = await res.text();
-        throw new Error("Failed to create objective: " + txt);
+        toast({
+          title: "Error",
+          description: "Failed to create objective",
+          variant: "destructive",
+        });
+        return;
       }
 
       const created = await res.json();
@@ -139,7 +156,12 @@ export function CreateObjectiveDialog({
         created.id || created.objective_id || created.data?.id;
       if (!objectiveId) {
         // If API returns created object differently, try to handle gracefully
-        throw new Error("No objective id returned");
+        toast({
+          title: "Error",
+          description: "Invalid object id",
+          variant: "destructive",
+        });
+        return;
       }
 
       // Create key results (only those with a non-empty title)
@@ -177,6 +199,11 @@ export function CreateObjectiveDialog({
       ]);
       onOpenChange(false);
       if (onObjectiveCreated) onObjectiveCreated();
+
+      toast({
+        title: "Success",
+        description: "New Objective Created.",
+      });
     } catch (err) {
       console.error(err);
     } finally {

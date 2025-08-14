@@ -46,20 +46,21 @@ interface Member {
   last_active: string;
 }
 
+/* Presentation-only status colors (orangish theme for at-risk, warm accents) */
 function statusColor(status: string) {
   switch (status.toLowerCase()) {
     case "on_track":
     case "on track":
-      return "bg-green-100 text-green-800";
+      return "bg-[#EEF8FF] text-[#2563EB]"; // light blue bg, blue text
     case "ahead":
-      return "bg-emerald-100 text-emerald-800";
+      return "bg-[#ECFDF5] text-[#059669]"; // light green
     case "at_risk":
     case "at risk":
-      return "bg-yellow-100 text-yellow-800";
+      return "bg-[#FFF2EB] text-[#FF8A5B]"; // soft orange
     case "behind":
-      return "bg-red-100 text-red-800";
+      return "bg-[#FFF1F2] text-[#DC2626]"; // soft red
     default:
-      return "bg-gray-100 text-gray-800";
+      return "bg-zinc-100 text-zinc-800";
   }
 }
 
@@ -84,24 +85,34 @@ export function TeamsView() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"teams" | "members">(
-    user?.role === "admin" ? "teams" : "members"
+    user?.role === "admin" ? "teams" : "members",
   );
   const [teams, setTeams] = useState<Team[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [open, setOpen] = useState<boolean>(false);
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [loadingMembers, setLoadingMembers] = useState(false);
+
   useEffect(() => {
     if (!user?.organization_id) return;
 
     const fetchTeams = async () => {
       setLoadingTeams(true);
-      const res = await fetch(
-        `/api/teams/by-organization/${user?.organization_id}`
-      );
-      const data: Team[] = await res.json();
-      setTeams(data);
-      setLoadingTeams(false);
+      try {
+        const res = await fetch(
+          `/api/teams/by-organization/${user?.organization_id}`,
+        );
+        const data: Team[] = await res.json();
+        setTeams(data);
+        setLoadingTeams(false);
+      } catch (error) {
+        console.log(error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch teams!",
+          variant: "destructive",
+        });
+      }
     };
 
     fetchTeams();
@@ -112,39 +123,49 @@ export function TeamsView() {
 
     const fetchMembers = async () => {
       setLoadingMembers(true);
-      const token = localStorage.getItem("token");
-      let res;
-      if (user?.role == "admin") {
-        res = await fetch(
-          `/api/organizations/${user?.organization_id}/members`,
-          {
+      try {
+        const token = localStorage.getItem("token");
+        let res;
+        if (user?.role == "admin") {
+          res = await fetch(
+            `/api/organizations/${user?.organization_id}/members`,
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+        } else {
+          res = await fetch(`/api/teams/${user?.team_id}/members`, {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-          }
-        );
-      } else {
-        res = await fetch(`/api/teams/${user?.team_id}/members`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      }
+          });
+        }
 
-      if (!res.ok) {
+        if (!res.ok) {
+          toast({
+            title: "Failed",
+            description: "Failed to fetch members, try again...",
+            variant: "destructive",
+          });
+          setLoadingMembers(false);
+          return;
+        }
+
+        const data: Member[] = await res.json();
+        setMembers(data);
+        setLoadingMembers(false);
+      } catch (error) {
+        console.log(error);
         toast({
-          title: "Failed",
-          description: "Failed to fetch members, try again...",
+          title: "Error",
+          description: "Failed to fetch members!",
           variant: "destructive",
         });
-        return;
       }
-
-      const data: Member[] = await res.json();
-      setMembers(data);
-      setLoadingMembers(false);
     };
 
     fetchMembers();
@@ -153,35 +174,52 @@ export function TeamsView() {
   return (
     <div className="space-y-4">
       {/* Tabs */}
-      <div className="flex justify-between">
+      <div className="flex justify-between items-start">
         <div className="flex flex-col gap-2">
-          <h2 className="text-3xl font-bold">Teams & People</h2>
-          <p>Manage teams and track members performance</p>
+          <h2 className="text-3xl font-semibold text-zinc-900">
+            Teams & People
+          </h2>
+          <p className="text-sm text-zinc-500">
+            Manage teams and track members performance
+          </p>
         </div>
         {user?.role === "admin" && (
           <div>
-            <Button variant="default" onClick={() => setOpen(true)}>
+            <Button
+              variant="default"
+              onClick={() => setOpen(true)}
+              className="bg-[#FF8A5B] text-white hover:opacity-95"
+            >
               + Create Team
             </Button>
           </div>
         )}
       </div>
+
       {user?.role === "admin" && (
         <div className="flex gap-2">
           <Button
             variant={activeTab === "teams" ? "default" : "outline"}
             onClick={() => setActiveTab("teams")}
+            className={
+              activeTab === "teams"
+                ? "bg-[#FF8A5B] text-white hover:opacity-95"
+                : ""
+            }
           >
             Teams
           </Button>
-          {
-            <Button
-              variant={activeTab === "members" ? "default" : "outline"}
-              onClick={() => setActiveTab("members")}
-            >
-              All Members
-            </Button>
-          }
+          <Button
+            variant={activeTab === "members" ? "default" : "outline"}
+            onClick={() => setActiveTab("members")}
+            className={
+              activeTab === "members"
+                ? "bg-[#FF8A5B] text-white hover:opacity-95"
+                : ""
+            }
+          >
+            All Members
+          </Button>
         </div>
       )}
 
@@ -192,7 +230,7 @@ export function TeamsView() {
             ? Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
-                  className="rounded-lg border p-4 bg-white space-y-3"
+                  className="rounded-2xl border border-zinc-100 p-4 bg-white space-y-3 shadow-sm"
                 >
                   <div className="flex items-center justify-between">
                     <Skeleton className="h-4 w-32" />
@@ -210,43 +248,56 @@ export function TeamsView() {
             : teams.map((team) => (
                 <div
                   key={team.id}
-                  className="rounded-lg border p-4 bg-white space-y-3"
+                  className="rounded-2xl border border-zinc-100 p-4 bg-white space-y-3 shadow-sm"
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold">{team.name}</h3>
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-semibold text-zinc-900">
+                        {team.name}
+                      </h3>
                     </div>
                     <Badge className={statusColor(team.status)}>
-                      {team.status}
+                      {statusLabel(team.status)}
                     </Badge>
                   </div>
                   <div>
-                    <p className="font-medium">{team.team_lead?.name}</p>
-                    <p className="text-xs text-gray-500">Team Lead</p>
+                    <p className="font-medium text-zinc-900">
+                      {team.team_lead?.name}
+                    </p>
+                    <p className="text-xs text-zinc-500">Team Lead</p>
                   </div>
                   <div className="flex justify-between">
                     <div className="text-center">
-                      <p className="text-lg font-semibold">
+                      <p className="text-lg font-semibold text-zinc-900">
                         {team.members_count}
                       </p>
-                      <p className="text-xs text-gray-500">Members</p>
+                      <p className="text-xs text-zinc-500">Members</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-lg font-semibold">
+                      <p className="text-lg font-semibold text-zinc-900">
                         {team.active_okrs_count}
                       </p>
-                      <p className="text-xs text-gray-500">Active OKRs</p>
+                      <p className="text-xs text-zinc-500">Active OKRs</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-lg font-semibold">
+                      <p className="text-lg font-semibold text-zinc-900">
                         {team.average_progress}%
                       </p>
-                      <p className="text-xs text-gray-500">Avg Progress</p>
+                      <p className="text-xs text-zinc-500">Avg Progress</p>
                     </div>
                   </div>
+
+                  {/* Orange-themed progress bar (presentation only) */}
                   <div className="flex flex-col gap-2 text-sm">
-                    <p>Team Progress</p>
-                    <Progress value={team.average_progress} />
+                    <p className="text-sm text-zinc-700">Team Progress</p>
+                    <div className="w-full rounded-full bg-[#FFE7DF] h-2 overflow-hidden">
+                      <div
+                        className="h-2 bg-[#FF8A5B] rounded-full"
+                        style={{
+                          width: `${Math.max(0, Math.min(100, team.average_progress))}%`,
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -255,7 +306,7 @@ export function TeamsView() {
 
       {/* Members View */}
       {activeTab === "members" && (
-        <div className="rounded-lg border bg-white">
+        <div className="rounded-2xl border border-zinc-100 bg-white overflow-hidden shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -300,23 +351,34 @@ export function TeamsView() {
                     </TableRow>
                   ))
                 : members.map((m) => (
-                    <TableRow key={m.id}>
+                    <TableRow key={m.id} className="hover:bg-zinc-50">
                       <TableCell className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-semibold">
+                        <div className="h-8 w-8 rounded-full bg-[#FF8A5B] text-white flex items-center justify-center text-sm font-semibold">
                           {m.member?.name?.charAt(0).toUpperCase() ?? "?"}
                         </div>
                         <div>
-                          <div className="font-medium">{m.member.name}</div>
-                          <div className="text-sm text-gray-500">
+                          <div className="font-medium text-zinc-900">
+                            {m.member.name}
+                          </div>
+                          <div className="text-sm text-zinc-500">
                             {m.member.title || ""}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{m.team || "_____"}</TableCell>
-                      <TableCell>{m.okrs}</TableCell>
+                      <TableCell className="text-zinc-900">
+                        {m.team || "_____"}
+                      </TableCell>
+                      <TableCell className="text-zinc-900">{m.okrs}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Progress value={m.progress} className="w-20" />
+                          <div className="w-36 rounded-full bg-[#FFE7DF] h-2 overflow-hidden">
+                            <div
+                              className="h-2 bg-[#FF8A5B] rounded-full"
+                              style={{
+                                width: `${Math.max(0, Math.min(100, m.progress))}%`,
+                              }}
+                            />
+                          </div>
                           <span className="text-sm">{m.progress}%</span>
                         </div>
                       </TableCell>
@@ -325,9 +387,11 @@ export function TeamsView() {
                           {statusLabel(m.status)}
                         </Badge>
                       </TableCell>
-                      <TableCell>{m.last_active}</TableCell>
+                      <TableCell className="text-sm text-zinc-500">
+                        {m.last_active}
+                      </TableCell>
                       <TableCell>
-                        <button className="p-1 hover:bg-gray-100 rounded">
+                        <button className="p-1 hover:bg-zinc-50 rounded">
                           ⋯
                         </button>
                       </TableCell>

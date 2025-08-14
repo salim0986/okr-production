@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 
 import { KRForModal } from "./update-progress-modal";
+import { RealtimePostgresPayload, supabase } from "@/lib/supabaseClient";
+import { RealtimeChannel } from "@supabase/supabase-js";
+import { useToast } from "@/hooks/use-toast";
 
 type KR = {
   id: string;
@@ -45,6 +48,7 @@ interface KeyResultCardProps {
   setUpdateModalOpen: (v: boolean) => void;
   setCheckInModalOpen: (v: boolean) => void;
 }
+type CommentPayload = RealtimePostgresPayload<Comment>;
 
 export default function KeyResultCard({
   kr,
@@ -65,6 +69,7 @@ export default function KeyResultCard({
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const token = localStorage.getItem("token");
+  const { toast } = useToast();
   const krPercent = () => {
     const t = Number(kr.target_value || 0);
     const c = Number(kr.current_value || 0);
@@ -111,17 +116,23 @@ export default function KeyResultCard({
       fetchComments(krId);
     } catch (err) {
       console.error(err);
+      toast({
+        title: "Error",
+        description: "Failed to fetch key comments!",
+        variant: "destructive",
+      });
     } finally {
       setLoadingAction(false);
       setCommentOpenId(null);
     }
   };
   const handleToggleComments = (keyResultId: string) => {
-    if (!showComments && comments.length === 0) {
-      fetchComments(keyResultId);
+    if (!showComments) {
+      fetchComments(keyResultId); // always refresh list when opening
     }
-    setShowComments(!showComments);
+    setShowComments((prev) => !prev);
   };
+
   return (
     <div className={`p-3 rounded-lg space-y-3 border ${highlightClass}`}>
       <div className="flex justify-between items-start">

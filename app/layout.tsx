@@ -14,8 +14,9 @@ const geistMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OKR Management System",
-  description: "Comprehensive OKR tracking and management platform",
+  title: "Abex - OKR",
+  description:
+    "Comprehensive OKR tracking and management platform, provided by abex.work to its client as a gift.",
 };
 
 export default function RootLayout({

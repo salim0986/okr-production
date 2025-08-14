@@ -13,7 +13,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/auth/login');
+      router.push("/auth/login");
     }
   }, [user, isLoading, router]);
 
@@ -31,13 +31,17 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+        {/* Sidebar - fixed */}
         <AppSidebar />
-        <div className="flex-1 flex flex-col">
+
+        {/* Main content area */}
+        <div className="flex flex-1 flex-col overflow-hidden">
+          {/* Top navigation */}
           <TopNav />
-          <main className="flex-1 p-6 bg-gray-50">
-            {children}
-          </main>
+
+          {/* Scrollable page content */}
+          <main className="flex-1 overflow-y-auto p-6">{children}</main>
         </div>
       </div>
     </SidebarProvider>

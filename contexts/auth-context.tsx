@@ -24,7 +24,7 @@ interface AuthContextType {
     orgName: string,
     email: string,
     password: string,
-    role: UserRole
+    role: UserRole,
   ) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
@@ -72,7 +72,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) throw new Error("Login failed");
 
       const data = await res.json();
-      console.log(data);
 
       const decodedUser: DecodedToken = jwtDecode(data.token);
 
@@ -94,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     orgName: string,
     email: string,
     password: string,
-    role: UserRole
+    role: UserRole,
   ) => {
     try {
       const res = await fetch("/api/auth/register", {

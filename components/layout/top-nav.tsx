@@ -18,44 +18,60 @@ import Link from "next/link";
 export function TopNav() {
   const { user, logout } = useAuth();
 
-  const getInitials = (name: string) => {
-    return name
+  const getInitials = (name: string) =>
+    name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase();
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
   };
 
   return (
-    <header className="border-b bg-white px-6 py-3">
+    <header className="border-b border-gray-200 bg-white px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <SidebarTrigger />
+        {/* Left: Sidebar trigger + greeting */}
+        <div className="flex items-center gap-4">
+          <SidebarTrigger className="h-9 w-9 rounded-lg border border-gray-200 bg-white hover:bg-gray-50" />
+
           <div>
-            <h1 className="text-lg font-semibold">
-              Welcome back, {user?.name}
+            <h1 className="text-lg font-semibold text-gray-900">
+              {getGreeting()}, {user?.name}
             </h1>
-            <p className="text-sm text-muted-foreground">
-              {user?.role.toUpperCase()}
+            <p className="text-sm text-gray-500">
+              Here’s your OKR progress overview for this week
             </p>
           </div>
         </div>
 
+        {/* Right: Profile dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>
+            <Button
+              variant="ghost"
+              className="relative h-10 w-10 rounded-full border border-gray-200 hover:bg-gray-50"
+            >
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-[#FF8A5B] text-white font-medium">
                   {user?.name ? getInitials(user.name) : "U"}
                 </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuContent
+            className="w-56 rounded-lg shadow-lg"
+            align="end"
+            forceMount
+          >
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{user?.name}</p>
-                <p className="text-xs leading-none text-muted-foreground">
+                <p className="text-xs leading-none text-gray-500">
                   {user?.email}
                 </p>
               </div>

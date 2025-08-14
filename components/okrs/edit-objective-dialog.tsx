@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditObjectiveDialogProps {
   open: boolean;
@@ -43,6 +44,7 @@ export function EditObjectiveDialog({
   organizationId,
   onObjectiveUpdated,
 }: EditObjectiveDialogProps) {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(false);
 
@@ -85,7 +87,14 @@ export function EditObjectiveDialog({
           }),
         ]);
 
-        if (!objRes.ok) throw new Error("Failed to fetch objective");
+        if (!objRes.ok) {
+          toast({
+            title: "Error",
+            description: "Failed to fetch objective",
+            variant: "destructive",
+          });
+          return;
+        }
 
         const obj = await objRes.json();
         // adapt based on your API response shape
@@ -112,6 +121,11 @@ export function EditObjectiveDialog({
         }
       } catch (err) {
         console.error("Failed to load objective edit data", err);
+        toast({
+          title: "Error",
+          description: "Failed to load objective",
+          variant: "destructive",
+        });
       } finally {
         setLoadingInitial(false);
       }

@@ -17,11 +17,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import UpdateProgressModal, { KRForModal } from "./update-progress-modal";
 import { useAuth } from "@/contexts/auth-context";
 import KeyResultCard from "./key-result-modal";
+import { supabase } from "@/lib/supabaseClient";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { useToast } from "@/hooks/use-toast";
 
 type KR = {
   id: string;
@@ -84,6 +86,7 @@ export default function ObjectiveCard({
   const { user } = useAuth();
   const currentUserId = propCurrentUserId ?? user?.id ?? "";
   const currentRole = propRole ?? user?.role ?? "";
+  const { toast } = useToast();
 
   const isEmployee = currentRole?.toLowerCase() === "employee";
 
@@ -117,6 +120,11 @@ export default function ObjectiveCard({
       }
     } catch (err) {
       console.error("Failed to fetch key results", err);
+      toast({
+        title: "Error",
+        description: "Failed to fetch key results!",
+        variant: "destructive",
+      });
       setKrs([]);
     } finally {
       setLoadingKRs(false);
@@ -137,13 +145,44 @@ export default function ObjectiveCard({
     fetchKRs();
   }, [expanded, krs.length, fetchKRs]);
 
-  const krPercent = (kr: KR) => {
-    const t = Number(kr.target_value || 0);
-    const c = Number(kr.current_value || 0);
-    return t > 0 ? Math.round((c / t) * 100) : 0;
-  };
+  useEffect(() => {
+    // Subscribe to realtime changes for key_results of this objective
+    const channel = supabase
+      .channel(`realtime:key_results:${objective.id}`)
+      .on<RealtimePostgresChangesPayload<KR>>(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "key_results",
+          filter: `objective_id=eq.${objective.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT" && payload.new) {
+            setKrs((prev) => [...prev, payload.new as KR]);
+          }
+          if (payload.eventType === "UPDATE" && payload.new) {
+            setKrs((prev) =>
+              prev.map((kr) =>
+                kr.id === (payload.new as KR).id
+                  ? { ...kr, ...(payload.new as KR) }
+                  : kr
+              )
+            );
+          }
+          if (payload.eventType === "DELETE" && payload.old) {
+            setKrs((prev) =>
+              prev.filter((kr) => kr.id !== (payload.old as KR).id)
+            );
+          }
+        }
+      )
+      .subscribe();
 
-  // comment
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [objective.id]);
 
   // update progress via existing modal (team-lead/admin)
   const handleKRUpdate = async (newValue: number) => {

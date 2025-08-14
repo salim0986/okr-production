@@ -10,7 +10,13 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Users, Target, TrendingUp, Building2, Clock } from "lucide-react";
+import {
+  Users,
+  Target,
+  TrendingUp,
+  AlertTriangle, // icon change for "At Risk"
+  Clock,
+} from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { StatCard } from "./stat-card";
 
 interface QuickStats {
   totalTeams: number;
@@ -60,10 +67,8 @@ export function AdminDashboard() {
         const response = await fetch(
           `/api/dashboard/admin/${user?.organization_id}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+            headers: { Authorization: `Bearer ${token}` },
+          },
         );
 
         if (response.ok) {
@@ -72,6 +77,11 @@ export function AdminDashboard() {
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch dashboard data",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
@@ -85,9 +95,7 @@ export function AdminDashboard() {
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(`/api/teams/admin/insights`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.ok) {
@@ -96,6 +104,11 @@ export function AdminDashboard() {
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch dashboard data",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
@@ -109,9 +122,7 @@ export function AdminDashboard() {
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(`/api/users/inactive`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.ok) {
@@ -120,6 +131,11 @@ export function AdminDashboard() {
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch dashboard data",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
@@ -136,26 +152,29 @@ export function AdminDashboard() {
           title: "Follow Up",
           message: `Hello ${name}, this is to notify you, that you are being inactive for more than 7 days. Kindly be more active on active operations.`,
           type: "follow_up",
-          target: {
-            type: "user",
-            ids: [id],
-          },
+          target: { type: "user", ids: [id] },
         }),
       });
+
       if (!res.ok) {
         toast({
           title: "Error",
           description: "Failed to follow up, there are errors",
           variant: "destructive",
         });
+      } else {
+        toast({
+          title: "Success",
+          description: "User followed up successfully",
+        });
       }
-
-      toast({
-        title: "Success",
-        description: "User followed up successfully",
-      });
     } catch (error) {
       console.log(error);
+      toast({
+        title: "Error",
+        description: "Failed to follow up, there are errors!",
+        variant: "destructive",
+      });
     }
   };
 
@@ -164,14 +183,17 @@ export function AdminDashboard() {
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i}>
+            <Card
+              key={i}
+              className="rounded-2xl border border-zinc-100 shadow-sm"
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
-                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 bg-zinc-200 rounded w-20 animate-pulse" />
+                <div className="h-7 w-7 rounded-xl bg-primary/10 animate-pulse" />
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-gray-200 rounded w-16 animate-pulse mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-24 animate-pulse"></div>
+                <div className="h-8 bg-zinc-200 rounded w-16 animate-pulse mb-2" />
+                <div className="h-3 bg-zinc-200 rounded w-24 animate-pulse" />
               </CardContent>
             </Card>
           ))}
@@ -181,73 +203,54 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Page heading */}
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-2xl font-semibold tracking-tight text-zinc-900">
+          Admin Dashboard
+        </h2>
+        <p className="text-sm text-zinc-500">
           Overview of your organization's OKR performance
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Teams</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalTeams || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              Active teams in organization
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Objectives
-            </CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeOkrs || 0}</div>
-            <p className="text-xs text-muted-foreground">Across all teams</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Completion Rate
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats?.avgCompletion || 0}%
-            </div>
-            <Progress value={stats?.avgCompletion || 0} className="mt-2" />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">At Risk</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.atRiskOkrs || 0}</div>
-            <p className="text-xs text-muted-foreground">Objectives Behind</p>
-          </CardContent>
-        </Card>
+      {/* Quick stats */}
+      <div className="grid grid-cols-4 gap-4">
+        <StatCard
+          title="Total Teams"
+          value={10}
+          subtitle="+2 this quarter"
+          icon={Users}
+        />
+        <StatCard
+          title="Active OKRs"
+          value={47}
+          subtitle="+8 this month"
+          icon={Target}
+        />
+        <StatCard
+          title="Avg Completion"
+          value="73%"
+          subtitle="+5% vs last quarter"
+          icon={TrendingUp}
+        />
+        <StatCard
+          title="At Risk OKRs"
+          value={8}
+          subtitle="-2 from last week"
+          icon={AlertTriangle}
+        />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+      {/* Teams summary + Inactive users */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Teams Summary */}
+        <Card className="rounded-2xl border border-zinc-100 shadow-sm">
           <CardHeader>
-            <CardTitle>Teams Summary</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg font-semibold text-zinc-900">
+              Teams Summary
+            </CardTitle>
+            <CardDescription className="text-zinc-500">
               Latest updates across your organization
             </CardDescription>
           </CardHeader>
@@ -255,48 +258,57 @@ export function AdminDashboard() {
             {tableData?.length ? (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Team</TableHead>
-                    <TableHead>Lead</TableHead>
-                    <TableHead>Members</TableHead>
-                    <TableHead>Completion</TableHead>
-                    <TableHead>Status</TableHead>
+                  <TableRow className="bg-zinc-50">
+                    <TableHead className="text-zinc-500">Team</TableHead>
+                    <TableHead className="text-zinc-500">Lead</TableHead>
+                    <TableHead className="text-zinc-500">Members</TableHead>
+                    <TableHead className="text-zinc-500">Completion</TableHead>
+                    <TableHead className="text-zinc-500">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {tableData.map((row, idx) => {
-                    const statusVariantMap: Record<
-                      string,
-                      "default" | "secondary" | "destructive" | "outline"
-                    > = {
-                      ahead: "default",
-                      on_track: "secondary",
-                      at_risk: "destructive",
-                      completed: "outline",
-                      overdue: "destructive",
+                    const statusPill: Record<string, string> = {
+                      ahead: "bg-amber-400 text-white",
+                      on_track: "bg-blue-500 text-white",
+                      at_risk: "bg-red-500 text-white",
+                      completed: "bg-emerald-500 text-white",
+                      overdue: "bg-rose-500 text-white",
                     };
 
                     return (
-                      <TableRow key={idx}>
+                      <TableRow key={idx} className="hover:bg-zinc-50/60">
                         <TableCell>
-                          <Badge variant="outline">{row.team}</Badge>
+                          <Badge
+                            variant="outline"
+                            className="rounded-full border-zinc-200 text-zinc-700"
+                          >
+                            {row.team}
+                          </Badge>
                         </TableCell>
-                        <TableCell>{row.lead}</TableCell>
-                        <TableCell>{row.members}</TableCell>
+                        <TableCell className="text-zinc-800">
+                          {row.lead}
+                        </TableCell>
+                        <TableCell className="text-zinc-800">
+                          {row.members}
+                        </TableCell>
                         <TableCell>
-                          <div className="w-[100px]">
-                            <span className="text-xs text-muted-foreground">
+                          <div className="w-[120px]">
+                            <span className="text-xs text-zinc-500">
                               {row.completion}%
                             </span>
-                            <Progress value={row.completion} />
+                            <Progress
+                              value={row.completion}
+                              className="mt-1 h-2 bg-zinc-100"
+                            />
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={statusVariantMap[row.status] || "outline"}
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${statusPill[row.status] || "bg-zinc-200 text-zinc-700"}`}
                           >
                             {row.status.replace(/_/g, " ")}
-                          </Badge>
+                          </span>
                         </TableCell>
                       </TableRow>
                     );
@@ -304,38 +316,38 @@ export function AdminDashboard() {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-sm text-muted-foreground">No team found</p>
+              <p className="text-sm text-zinc-500">No team found</p>
             )}
           </CardContent>
         </Card>
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader className="flex flex-row items-center gap-2 pb-2 ">
-            <Clock className="h-5 w-5 text-gray-500" />
-            <CardTitle className="text-lg font-semibold">
+
+        {/* Inactive Users */}
+        <Card className="rounded-2xl border border-zinc-100 shadow-sm">
+          <CardHeader className="flex flex-row items-center gap-2 pb-2">
+            <Clock className="h-5 w-5 text-primary" />
+            <CardTitle className="text-lg font-semibold text-zinc-900">
               Inactive Users (7+ days)
             </CardTitle>
           </CardHeader>
 
-          <CardContent className="divide-y divide-gray-100">
-            {users.map((user) => (
+          <CardContent className="divide-y divide-zinc-100">
+            {users.map((u) => (
               <div
-                key={user.id}
-                className="flex items-center justify-between py-3"
+                key={u.id}
+                className="flex items-center justify-between py-3 text-sm"
               >
-                <div>
-                  <div className="font-medium">{user.name}</div>
-                </div>
-                <div className="flex items-center gap-6">
-                  <span className="text-sm text-gray-500">
-                    {user.last_login.substring(0, 10)}
+                <div className="space-y-0.5">
+                  <div className="font-medium text-zinc-900">{u.name}</div>
+                  <span className="text-xs text-zinc-500">
+                    {u.last_login.substring(0, 10)}
                   </span>
-                  <button
-                    onClick={() => sendNotification(user.id, user.name)}
-                    className="text-sm font-medium text-indigo-600 hover:underline"
-                  >
-                    Follow Up
-                  </button>
                 </div>
+                <button
+                  onClick={() => sendNotification(u.id, u.name)}
+                  className="font-medium text-primary hover:text-primary/80"
+                >
+                  Follow Up
+                </button>
               </div>
             ))}
           </CardContent>

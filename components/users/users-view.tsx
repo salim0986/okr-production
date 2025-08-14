@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 interface Member {
   id: string;
@@ -62,23 +63,33 @@ export function UsersView() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!user?.organization_id) return;
     const fetchMembers = async () => {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `/api/organizations/${user.organization_id}/members`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      const data: Member[] = await res.json();
-      setMembers(data);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `/api/organizations/${user.organization_id}/members`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data: Member[] = await res.json();
+        setMembers(data);
+      } catch (error) {
+        console.log(error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch users!",
+          variant: "destructive",
+        });
+      }
       setLoading(false);
     };
     fetchMembers();

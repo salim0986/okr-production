@@ -8,7 +8,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -23,6 +22,7 @@ import {
   Bell,
   CheckCircle,
 } from "lucide-react";
+import Image from "next/image";
 
 const menuItems = [
   {
@@ -43,12 +43,7 @@ const menuItems = [
     icon: Group,
     roles: ["admin", "team_lead", "employee"],
   },
-  {
-    title: "Users",
-    url: "/users",
-    icon: Users,
-    roles: ["admin"],
-  },
+  { title: "Users", url: "/users", icon: Users, roles: ["admin"] },
   {
     title: "Notifications",
     url: "/notifications",
@@ -73,7 +68,6 @@ export function AppSidebar() {
   const { user } = useAuth();
   const pathname = usePathname();
 
-  // Apply role-based title changes
   const updatedMenuItems = menuItems.map((item) => {
     if (
       item.title === "Teams" &&
@@ -85,22 +79,39 @@ export function AppSidebar() {
   });
 
   const filteredMenuItems = updatedMenuItems.filter(
-    (item) => user?.role && item.roles.includes(user.role)
+    (item) => user?.role && item.roles.includes(user.role),
   );
 
   return (
-    <Sidebar>
-      <SidebarHeader className="p-4">
-        <div className="flex items-center space-x-2">
-          <Target className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold">OKR System</span>
+    <Sidebar className="bg-white border-r border-gray-200 w-[260px]">
+      {/* Header */}
+      <SidebarHeader className="px-8 py-6">
+        <div>
+          <Image
+            src="/logo.svg"
+            alt="abex.work"
+            width={120}
+            height={20}
+            priority
+          />
+          <div className="mt-1 flex items-baseline">
+            <span className="text-[22px] font-extrabold tracking-tight text-gray-900">
+              OKR
+            </span>
+            <span
+              aria-hidden
+              className="ml-1.5 inline-block h-2 w-2 rounded-full bg-[#FF8A5B] translate-y-[-2px]"
+            />
+          </div>
+          <div className="mt-5 h-px w-full bg-gray-200" />
         </div>
       </SidebarHeader>
-      <SidebarContent>
+
+      {/* Menu */}
+      <SidebarContent className="px-3">
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {filteredMenuItems.map((item) => {
                 const isActive = pathname === item.url;
                 return (
@@ -108,15 +119,19 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      className={`rounded-md transition-colors ${
+                      className={`group flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium ${
                         isActive
-                          ? "bg-primary text-white hover:bg-primary/90"
-                          : "hover:bg-gray-100"
+                          ? "bg-[#FFF4F0] text-gray-900"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                       }`}
                     >
                       <Link href={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                        <item.icon
+                          className={`h-[18px] w-[18px] flex-shrink-0 transition-colors ${
+                            isActive ? "text-[#FF8A5B]" : "text-gray-400 "
+                          }`}
+                        />
+                        <span className="truncate">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

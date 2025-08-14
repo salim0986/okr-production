@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Target, Calendar, MessageSquare, TrendingUp } from "lucide-react";
 import { OKRsView } from "../okrs/okrs-view";
+import { useToast } from "../ui/use-toast";
+import { StatCard } from "./stat-card"; // <- uses the StatCard you shared
 
 interface EmployeeInsights {
   activeOkrs: number;
@@ -39,6 +41,7 @@ export function EmployeeDashboard() {
   const [checkInProgress, setCheckInProgress] = useState("");
   const [checkInComment, setCheckInComment] = useState("");
   const token = localStorage.getItem("token");
+  const { toast } = useToast();
 
   useEffect(() => {
     async function fetchData() {
@@ -48,7 +51,6 @@ export function EmployeeDashboard() {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         const insightsData = await resInsights.json();
-        console.log(insightsData);
         setInsights(insightsData);
 
         const resOkrs = await fetch("/api/objectives", {
@@ -58,6 +60,11 @@ export function EmployeeDashboard() {
         setOkrs(okrData);
       } catch (err) {
         console.error("Failed to load dashboard data", err);
+        toast({
+          title: "Error",
+          description: "Failed to fetch dashboard data",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
@@ -85,65 +92,68 @@ export function EmployeeDashboard() {
     }
   }
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-4">
+          <StatCard title="..." value=" " icon={Target} />
+
+          <StatCard title="..." value=" " icon={TrendingUp} />
+
+          <StatCard title="..." value=" " icon={Calendar} />
+
+          <StatCard title="..." value=" " icon={MessageSquare} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Quick Stats */}
       {insights && (
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active OKRs</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{insights.activeOkrs}</div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Active OKRs"
+            value={insights.activeOkrs}
+            icon={Target}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Avg. Progress
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {Math.round(insights.avgProgress)}%
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Avg. Progress"
+            value={`${Math.round(insights.avgProgress)}%`}
+            icon={TrendingUp}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Due This Week
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {insights.dueThisWeek.count}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {insights.dueThisWeek.nextTitle || "-"}
-              </p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Due This Week"
+            value={insights.dueThisWeek.count}
+            icon={Calendar}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Comments</CardTitle>
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{insights.comments}</div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Comments"
+            value={insights.comments}
+            icon={MessageSquare}
+          />
         </div>
       )}
+
+      {/* Optional: quick personal OKRs list rendered via existing OKRsView */}
+      <div className="space-y-6">
+        <Card className="rounded-2xl bg-white border border-zinc-100 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-zinc-900">
+              <Target className="h-5 w-5 text-[#FF8A5B]" />
+              Your OKRs
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* OKRsView remains unchanged, containing its own logic */}
+            <OKRsView />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
