@@ -5,8 +5,7 @@ import { signToken } from "@/app/api/utils/auth";
 import jwt from "jsonwebtoken";
 
 export async function POST(req: NextRequest) {
-  const { email, orgName, password, name, role, organization_id, team_id } =
-    await req.json();
+  const { email, orgName, password, name, role } = await req.json();
 
   // Check if user exists
   const { data: existingUser } = await supabase
@@ -22,50 +21,55 @@ export async function POST(req: NextRequest) {
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  let orgId;
+  // If admin, create org
+  if (role === "admin") {
+    const { data: org, error: orgError } = await supabase
+      .from("organizations")
+      .insert([
+        {
+          name: orgName || "",
+        },
+      ])
+      .select("*")
+      .maybeSingle();
+    orgId = org.id;
+    if (orgError) {
+      return NextResponse.json({ error: orgError.message }, { status: 500 });
+    }
+  }
+
   // Insert user
-  const { error: insertError } = await supabase.from("users").insert([
-    {
-      email,
-      password: hashedPassword,
-      name,
-      role: role || "employee",
-      last_login: new Date(),
-      organization_id,
-      team_id,
-    },
-  ]);
+  const { data: user, error: insertError } = await supabase
+    .from("users")
+    .insert([
+      {
+        email,
+        password: hashedPassword,
+        name,
+        organization_id: orgId,
+        role: role || "employee",
+        last_login: new Date(),
+      },
+    ])
+    .select("*")
+    .maybeSingle();
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
-  // Fetch newly created user
-  const { data: user } = await supabase
-    .from("users")
-    .select("*")
-    .eq("email", email)
-    .maybeSingle();
+  // Updated organization owner info
+  const { error: userUpdateError } = await supabase
+    .from("organizations")
+    .update({ created_by: user.id })
+    .eq("id", orgId);
 
-  // If admin, create org
-  if (role === "admin") {
-    const { error: orgError } = await supabase.from("organizations").insert([
-      {
-        name: orgName || "",
-        created_by: user.id,
-      },
-    ]);
-    if (orgError) {
-      return NextResponse.json({ error: orgError.message }, { status: 500 });
-    }
-
-    const { data: organization } = await supabase
-      .from("organizations")
-      .select("*")
-      .eq("created_by", user.id)
-      .maybeSingle();
-
-    user.organization_id = organization.id;
+  if (userUpdateError) {
+    return NextResponse.json(
+      { error: userUpdateError.message },
+      { status: 500 }
+    );
   }
-
   // Your normal app token (keeps `role` as is)
   const appToken = signToken({
     name: user.name,
