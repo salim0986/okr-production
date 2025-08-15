@@ -21,16 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { StatCard } from "./stat-card";
 
-/* ---------- types (unchanged) ---------- */
+/* ---------- types ---------- */
 type QuickInsights = {
   teamMembers: number;
   teamOkrs: { total: number; completed: number };
@@ -44,31 +38,57 @@ type MemberInsight = {
   team: string;
   okrs: number;
   progress: number;
-  status: string; // "ahead" | "on_track" | "at_risk" | ...
+  status: string;
   last_login?: string | null;
 };
 
-type PendingCheckin = {
+/**
+ * shape returned by `/api/checkins/pending`
+ */
+type PendingCheckinAPI = {
   id: string;
-  key_result_id: string;
-  user_id: string;
   progress_value: number;
   comment?: string | null;
-  check_in_date?: string;
-  created_at?: string;
+  check_in_date?: string | null;
+  created_at?: string | null;
+  key_result: {
+    id: string;
+    title?: string | null;
+    target_value: number;
+  };
+  user: {
+    id: string;
+    name?: string | null;
+  };
 };
 
-/* ---------- main component (logic preserved) ---------- */
+/**
+ * shape used by the UI after minimal normalization
+ */
+type PendingForUI = {
+  id: string;
+  key_result_id?: string;
+  key_result_title?: string;
+  target_value: number;
+  user_id?: string;
+  memberName: string;
+  progress_value: number;
+  comment?: string | null;
+  check_in_date?: string | null;
+  created_at?: string | null;
+};
+
+/* ---------- component ---------- */
 export function TeamLeadDashboard() {
   const { user } = useAuth();
   const teamId = user?.team_id;
 
   const [quick, setQuick] = useState<QuickInsights | null>(null);
   const [members, setMembers] = useState<MemberInsight[]>([]);
-  const [pending, setPending] = useState<PendingCheckin[]>([]);
+  const [pending, setPending] = useState<PendingCheckinAPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>(
-    {},
+    {}
   );
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -91,7 +111,7 @@ export function TeamLeadDashboard() {
         variant: "destructive",
       });
     }
-  }, [teamId, token]);
+  }, [teamId, token, toast]);
 
   const fetchMembers = useCallback(async () => {
     try {
@@ -109,7 +129,7 @@ export function TeamLeadDashboard() {
         variant: "destructive",
       });
     }
-  }, [token]);
+  }, [token, toast]);
 
   const fetchPending = useCallback(async () => {
     try {
@@ -117,7 +137,7 @@ export function TeamLeadDashboard() {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!res.ok) throw new Error("Failed to fetch pending check-ins");
-      const data = await res.json();
+      const data: PendingCheckinAPI[] = await res.json();
       setPending(data);
     } catch (err) {
       console.error(err);
@@ -127,7 +147,7 @@ export function TeamLeadDashboard() {
         variant: "destructive",
       });
     }
-  }, [token]);
+  }, [token, toast]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -158,15 +178,10 @@ export function TeamLeadDashboard() {
     }
   };
 
-  const isPositiveStatus = (s?: string) => {
-    if (!s) return false;
-    return ["ahead", "on_track", "on track"].includes(s.toLowerCase());
-  };
-
   const handleCheckinAction = async (
     keyResultId: string,
     checkInId: string,
-    status: "approved" | "rejected",
+    status: "approved" | "rejected"
   ) => {
     if (!keyResultId || !checkInId) return;
     setActionLoading((p) => ({ ...p, [checkInId]: true }));
@@ -180,28 +195,39 @@ export function TeamLeadDashboard() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({ status, checkInId }),
-        },
+        }
       );
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(txt || "Failed to update check-in status");
       }
+      // refresh relevant data
       await Promise.all([fetchPending(), fetchQuick(), fetchMembers()]);
     } catch (err) {
       console.error("Action failed:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update check-in status",
+        variant: "destructive",
+      });
     } finally {
       setActionLoading((p) => ({ ...p, [checkInId]: false }));
     }
   };
 
-  const pendingWithMember = pending.map((p) => {
-    const member = members.find((m) => m.id === p.user_id);
-    return {
-      ...p,
-      memberName: member?.member?.name ?? member?.member ?? "Unknown",
-      okrName: undefined as string | undefined,
-    };
-  });
+  // Normalize pending for UI usage. We derive memberName and the KR title/id from the API result.
+  const pendingForUI: PendingForUI[] = pending.map((p) => ({
+    id: p.id,
+    key_result_id: p.key_result?.id,
+    key_result_title: p.key_result?.title ?? undefined,
+    target_value: p.key_result?.target_value ?? null,
+    user_id: p.user?.id,
+    memberName: p.user?.name ?? "Unknown",
+    progress_value: p.progress_value ?? 0,
+    comment: p.comment ?? undefined,
+    check_in_date: p.check_in_date ?? undefined,
+    created_at: p.created_at ?? undefined,
+  }));
 
   /* ---------- Loading skeleton (styling only) ---------- */
   if (loading) {
@@ -351,7 +377,6 @@ export function TeamLeadDashboard() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            {/* progress wrapper uses theme background, Progress keeps accessibility */}
                             <div className="rounded-full bg-[#FFE7DF] w-36 h-2 overflow-hidden">
                               <div
                                 className="h-2 bg-[#FF8A5B] rounded-full"
@@ -362,7 +387,6 @@ export function TeamLeadDashboard() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {/* Status pills with clear mapping (visual theme preserved) */}
                           {(() => {
                             const key = (m.status || "").toLowerCase();
                             const map: Record<string, string> = {
@@ -378,7 +402,7 @@ export function TeamLeadDashboard() {
                               <span
                                 className={cn(
                                   "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
-                                  map[key] || "bg-zinc-200 text-zinc-700",
+                                  map[key] || "bg-zinc-200 text-zinc-700"
                                 )}
                               >
                                 {statusLabel(m.status)}
@@ -416,8 +440,8 @@ export function TeamLeadDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {pendingWithMember.length > 0 ? (
-                pendingWithMember.map((p) => (
+              {pendingForUI.length > 0 ? (
+                pendingForUI.map((p) => (
                   <div
                     key={p.id}
                     className="space-y-2 border-b last:border-b-0 pb-4 last:pb-0"
@@ -428,13 +452,13 @@ export function TeamLeadDashboard() {
                           {p.memberName}
                         </p>
                         <p className="text-xs text-zinc-500">
-                          KR: {p.key_result_id}
+                          KR: {p.key_result_title ?? p.key_result_id ?? "—"}
                         </p>
                       </div>
                       <div className="text-xs text-zinc-500">
-                        {(p.check_in_date ?? p.created_at)
+                        {p.check_in_date ?? p.created_at
                           ? new Date(
-                              p.created_at ?? p.check_in_date!,
+                              p.check_in_date ?? p.created_at!
                             ).toLocaleString()
                           : ""}
                       </div>
@@ -448,13 +472,23 @@ export function TeamLeadDashboard() {
                             style={{
                               width: `${Math.max(
                                 0,
-                                Math.min(100, Number(p.progress_value ?? 0)),
+                                Math.min(
+                                  100,
+                                  Number(
+                                    Math.floor(
+                                      (p.progress_value * 100) / p.target_value
+                                    )
+                                  )
+                                )
                               )}%`,
                             }}
                           />
                         </div>
                         <span className="text-xs">
-                          {p.progress_value ?? 0}%
+                          {Math.floor(
+                            (p.progress_value * 100) / p.target_value
+                          )}
+                          %
                         </span>
                       </div>
 
@@ -465,9 +499,9 @@ export function TeamLeadDashboard() {
                           type="button"
                           onClick={() =>
                             handleCheckinAction(
-                              p.key_result_id,
+                              p.key_result_id ?? "",
                               p.id,
-                              "approved",
+                              "approved"
                             )
                           }
                           disabled={!!actionLoading[p.id]}
@@ -482,9 +516,9 @@ export function TeamLeadDashboard() {
                           type="button"
                           onClick={() =>
                             handleCheckinAction(
-                              p.key_result_id,
+                              p.key_result_id ?? "",
                               p.id,
-                              "rejected",
+                              "rejected"
                             )
                           }
                           disabled={!!actionLoading[p.id]}

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Bell, CheckCircle, AlertCircle, Info, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient"; // Your Supabase client
+import { useAuth } from "@/contexts/auth-context";
 
 interface Notification {
   id: string;
@@ -30,6 +31,7 @@ export function NotificationsView() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -59,35 +61,48 @@ export function NotificationsView() {
 
     fetchNotifications();
 
-    // Subscribe to Supabase Realtime
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    // ✅ Use user.id from your auth context
     const channel = supabase
       .channel("realtime:notifications")
       .on<PostgresPayload<Notification>>(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications" },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user?.id}`, // <-- row-level filter
+        },
         (payload) => {
           if (payload.new) {
             setNotifications((prev) => [...prev, payload.new as Notification]);
           }
-        },
+        }
       )
       .on<PostgresPayload<Notification>>(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "notifications" },
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user?.id}`, // <-- row-level filter
+        },
         (payload) => {
           if (payload.old) {
             setNotifications((prev) =>
-              prev.filter((n) => n.id !== (payload.old as Notification).id),
+              prev.filter((n) => n.id !== (payload.old as Notification).id)
             );
           }
-        },
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -104,8 +119,8 @@ export function NotificationsView() {
       if (response.ok) {
         setNotifications((prev) =>
           prev.map((notif) =>
-            notif.id === notificationId ? { ...notif, is_read: true } : notif,
-          ),
+            notif.id === notificationId ? { ...notif, is_read: true } : notif
+          )
         );
       }
     } catch (error) {
@@ -129,7 +144,7 @@ export function NotificationsView() {
 
       if (response.ok) {
         setNotifications((prev) =>
-          prev.filter((notif) => notif.id !== notificationId),
+          prev.filter((notif) => notif.id !== notificationId)
         );
         toast({
           title: "Success",
@@ -270,7 +285,7 @@ export function NotificationsView() {
                         </h4>
                         <Badge
                           variant={getNotificationBadgeVariant(
-                            notification.type,
+                            notification.type
                           )}
                           className="capitalize"
                         >

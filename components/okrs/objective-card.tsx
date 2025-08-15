@@ -14,6 +14,16 @@ import {
   CardContent,
   CardDescription,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -419,77 +429,66 @@ function CheckInModal({
     }
   }, [open, kr]);
 
-  if (!open || !kr) return null;
+  if (!kr) return null;
 
   return (
-    // overlay
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={() => onOpenChange(false)}
-        aria-hidden
-      />
-      <div className="relative z-50 w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Check In — {kr.title}</h3>
-          <button
-            className="text-gray-500 hover:text-gray-700"
-            onClick={() => onOpenChange(false)}
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Check In — {kr.title}</DialogTitle>
+          <DialogDescription>
+            Update your progress and optionally add a comment.
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="space-y-3">
-          <label className="text-sm text-muted-foreground block">
-            Progress value
-          </label>
-          <input
-            type="number"
-            min={0}
-            max={kr.target_value}
-            value={value}
-            onChange={(e) => setValue(Number(e.target.value))}
-            className="w-full p-2 border rounded"
-          />
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="progress">Progress value</Label>
+            <Input
+              id="progress"
+              type="number"
+              min={0}
+              max={kr.target_value}
+              value={value}
+              onChange={(e) => setValue(Number(e.target.value))}
+            />
+          </div>
 
-          <label className="text-sm text-muted-foreground block">
-            Comment (optional)
-          </label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            className="w-full p-2 border rounded"
-            rows={3}
-          />
+          <div>
+            <Label htmlFor="comment">Comment (optional)</Label>
+            <Textarea
+              id="comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+            />
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 mt-4">
-          <button
-            className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200"
-            onClick={() => onOpenChange(false)}
+          <Button
             type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
             disabled={busy}
           >
             Cancel
-          </button>
-          <button
-            className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+          </Button>
+          <Button
+            type="button"
             onClick={async () => {
               try {
                 await onSubmit(value, comment);
-              } catch (err) {
-                // swallow - parent will console error
+              } catch {
+                // parent handles error
               }
             }}
             disabled={busy || Number.isNaN(value) || value < 0 || value > 100}
-            type="button"
           >
             {busy ? "Saving..." : "Submit Check-in"}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
