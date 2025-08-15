@@ -68,7 +68,7 @@ export function AdminDashboard() {
           `/api/dashboard/admin/${user?.organization_id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          },
+          }
         );
 
         if (response.ok) {
@@ -216,30 +216,10 @@ export function AdminDashboard() {
 
       {/* Quick stats */}
       <div className="grid grid-cols-4 gap-4">
-        <StatCard
-          title="Total Teams"
-          value={10}
-          subtitle="+2 this quarter"
-          icon={Users}
-        />
-        <StatCard
-          title="Active OKRs"
-          value={47}
-          subtitle="+8 this month"
-          icon={Target}
-        />
-        <StatCard
-          title="Avg Completion"
-          value="73%"
-          subtitle="+5% vs last quarter"
-          icon={TrendingUp}
-        />
-        <StatCard
-          title="At Risk OKRs"
-          value={8}
-          subtitle="-2 from last week"
-          icon={AlertTriangle}
-        />
+        <StatCard title="Total Teams" value={10} icon={Users} />
+        <StatCard title="Active OKRs" value={47} icon={Target} />
+        <StatCard title="Avg Completion" value="73%" icon={TrendingUp} />
+        <StatCard title="At Risk OKRs" value={8} icon={AlertTriangle} />
       </div>
 
       {/* Teams summary + Inactive users */}
@@ -256,65 +236,82 @@ export function AdminDashboard() {
           </CardHeader>
           <CardContent>
             {tableData?.length ? (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-zinc-50">
-                    <TableHead className="text-zinc-500">Team</TableHead>
-                    <TableHead className="text-zinc-500">Lead</TableHead>
-                    <TableHead className="text-zinc-500">Members</TableHead>
-                    <TableHead className="text-zinc-500">Completion</TableHead>
-                    <TableHead className="text-zinc-500">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tableData.map((row, idx) => {
-                    const statusPill: Record<string, string> = {
-                      ahead: "bg-amber-400 text-white",
-                      on_track: "bg-blue-500 text-white",
-                      at_risk: "bg-red-500 text-white",
-                      completed: "bg-emerald-500 text-white",
-                      overdue: "bg-rose-500 text-white",
-                    };
+              <div className="w-full overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-zinc-50">
+                      <TableHead className="min-w-[100px] sm:min-w-[120px] text-zinc-500">
+                        Team
+                      </TableHead>
+                      <TableHead className="min-w-[100px] sm:min-w-[120px] text-zinc-500">
+                        Lead
+                      </TableHead>
+                      <TableHead className="min-w-[80px] sm:min-w-[100px] text-zinc-500">
+                        Members
+                      </TableHead>
+                      <TableHead className="min-w-[150px] sm:min-w-[180px] text-zinc-500">
+                        Completion
+                      </TableHead>
+                      <TableHead className="min-w-[100px] sm:min-w-[120px] text-zinc-500">
+                        Status
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tableData.map((row, idx) => {
+                      const statusPill: Record<string, string> = {
+                        ahead: "bg-amber-400 text-white",
+                        on_track: "bg-blue-500 text-white",
+                        at_risk: "bg-red-500 text-white",
+                        completed: "bg-emerald-500 text-white",
+                        overdue: "bg-rose-500 text-white",
+                      };
 
-                    return (
-                      <TableRow key={idx} className="hover:bg-zinc-50/60">
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="rounded-full border-zinc-200 text-zinc-700"
-                          >
-                            {row.team}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-zinc-800">
-                          {row.lead}
-                        </TableCell>
-                        <TableCell className="text-zinc-800">
-                          {row.members}
-                        </TableCell>
-                        <TableCell>
-                          <div className="w-[120px]">
-                            <span className="text-xs text-zinc-500">
-                              {row.completion}%
+                      return (
+                        <TableRow key={idx} className="hover:bg-zinc-50/60">
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className="rounded-full border-zinc-200 text-zinc-700 truncate max-w-[100px] sm:max-w-[120px]"
+                            >
+                              {row.team}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-zinc-800">
+                            <div className="truncate max-w-[100px] sm:max-w-[120px]">
+                              {row.lead}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-zinc-800">
+                            {row.members}
+                          </TableCell>
+                          <TableCell>
+                            <div className="w-full ">
+                              <span className="text-xs text-zinc-500">
+                                {row.completion}%
+                              </span>
+                              <Progress
+                                value={row.completion}
+                                className="mt-1 h-2 bg-zinc-100"
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-medium ${
+                                statusPill[row.status] ||
+                                "bg-zinc-200 text-zinc-700"
+                              }`}
+                            >
+                              {row.status.replace(/_/g, " ")}
                             </span>
-                            <Progress
-                              value={row.completion}
-                              className="mt-1 h-2 bg-zinc-100"
-                            />
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${statusPill[row.status] || "bg-zinc-200 text-zinc-700"}`}
-                          >
-                            {row.status.replace(/_/g, " ")}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <p className="text-sm text-zinc-500">No team found</p>
             )}

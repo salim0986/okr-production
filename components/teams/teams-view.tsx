@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -85,7 +84,7 @@ export function TeamsView() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"teams" | "members">(
-    user?.role === "admin" ? "teams" : "members",
+    user?.role === "admin" ? "teams" : "members"
   );
   const [teams, setTeams] = useState<Team[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -100,7 +99,7 @@ export function TeamsView() {
       setLoadingTeams(true);
       try {
         const res = await fetch(
-          `/api/teams/by-organization/${user?.organization_id}`,
+          `/api/teams/by-organization/${user?.organization_id}`
         );
         const data: Team[] = await res.json();
         setTeams(data);
@@ -134,7 +133,7 @@ export function TeamsView() {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
               },
-            },
+            }
           );
         } else {
           res = await fetch(`/api/teams/${user?.team_id}/members`, {
@@ -294,7 +293,10 @@ export function TeamsView() {
                       <div
                         className="h-2 bg-[#FF8A5B] rounded-full"
                         style={{
-                          width: `${Math.max(0, Math.min(100, team.average_progress))}%`,
+                          width: `${Math.max(
+                            0,
+                            Math.min(100, team.average_progress)
+                          )}%`,
                         }}
                       />
                     </div>
@@ -375,7 +377,10 @@ export function TeamsView() {
                             <div
                               className="h-2 bg-[#FF8A5B] rounded-full"
                               style={{
-                                width: `${Math.max(0, Math.min(100, m.progress))}%`,
+                                width: `${Math.max(
+                                  0,
+                                  Math.min(100, m.progress)
+                                )}%`,
                               }}
                             />
                           </div>
