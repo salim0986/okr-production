@@ -218,22 +218,22 @@ export function AdminDashboard() {
       <div className="grid grid-cols-4 gap-4">
         <StatCard
           title="Total Teams"
-          value={String(stats?.totalTeams)}
+          value={String(stats?.totalTeams || 0)}
           icon={Users}
         />
         <StatCard
           title="Active OKRs"
-          value={String(stats?.activeOkrs)}
+          value={String(stats?.activeOkrs || 0)}
           icon={Target}
         />
         <StatCard
           title="Avg Completion"
-          value={`${stats?.avgCompletion}%`}
+          value={`${stats?.avgCompletion || 0}%`}
           icon={TrendingUp}
         />
         <StatCard
           title="At Risk OKRs"
-          value={String(stats?.atRiskOkrs)}
+          value={String(stats?.atRiskOkrs || 0)}
           icon={AlertTriangle}
         />
       </div>
