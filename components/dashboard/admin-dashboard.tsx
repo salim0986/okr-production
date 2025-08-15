@@ -216,10 +216,26 @@ export function AdminDashboard() {
 
       {/* Quick stats */}
       <div className="grid grid-cols-4 gap-4">
-        <StatCard title="Total Teams" value={10} icon={Users} />
-        <StatCard title="Active OKRs" value={47} icon={Target} />
-        <StatCard title="Avg Completion" value="73%" icon={TrendingUp} />
-        <StatCard title="At Risk OKRs" value={8} icon={AlertTriangle} />
+        <StatCard
+          title="Total Teams"
+          value={String(stats?.totalTeams)}
+          icon={Users}
+        />
+        <StatCard
+          title="Active OKRs"
+          value={String(stats?.activeOkrs)}
+          icon={Target}
+        />
+        <StatCard
+          title="Avg Completion"
+          value={`${stats?.avgCompletion}%`}
+          icon={TrendingUp}
+        />
+        <StatCard
+          title="At Risk OKRs"
+          value={String(stats?.atRiskOkrs)}
+          icon={AlertTriangle}
+        />
       </div>
 
       {/* Teams summary + Inactive users */}

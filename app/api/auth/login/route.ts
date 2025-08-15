@@ -1,8 +1,7 @@
 import supabase from "@/app/api/utils/db";
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { signToken } from "@/app/api/utils/auth";
-import jwt from "jsonwebtoken";
 
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json();
