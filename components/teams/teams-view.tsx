@@ -432,6 +432,7 @@ export function CreateTeamFormModal({
       },
       body: JSON.stringify({ name: teamName }),
     });
+    console.log(res);
 
     if (!res.ok) throw new Error("Failed to create team");
 

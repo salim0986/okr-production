@@ -34,7 +34,7 @@ export function OKRsView() {
   const [membersMap, setMembersMap] = useState<Record<string, string>>({});
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(
-    null,
+    null
   );
   const { toast } = useToast();
 
@@ -82,7 +82,7 @@ export function OKRsView() {
           `/api/organizations/${organizationId}/members`,
           {
             headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          },
+          }
         );
         if (!res.ok) return;
         const m = await res.json();
@@ -107,7 +107,7 @@ export function OKRsView() {
   const filteredObjectives = objectives.filter((obj) =>
     filter === "active"
       ? obj.status?.toLowerCase() !== "completed"
-      : obj.status?.toLowerCase() === "completed",
+      : obj.status?.toLowerCase() === "completed"
   );
 
   // Realtime subscription (same logic as your original)
@@ -118,25 +118,46 @@ export function OKRsView() {
 
     const channel = supabase
       .channel("realtime:objectives")
-      .on<RealtimePostgresPayload<Partial<Objective>>>(
+      .on<RealtimePostgresPayload<any>>(
         "postgres_changes",
         { event: "*", schema: "public", table: "objectives" },
-        (payload) => {
-          setObjectives((prev) => {
-            switch (payload.eventType) {
-              case "INSERT":
-                return [...prev, payload.new as Objective];
-              case "UPDATE":
-                return prev.map((obj) =>
-                  obj.id === payload.new?.id ? { ...obj, ...payload.new } : obj,
-                );
-              case "DELETE":
-                return prev.filter((obj) => obj.id !== payload.old?.id);
-              default:
-                return prev;
+        async (payload) => {
+          if (
+            payload.eventType === "INSERT" ||
+            payload.eventType === "UPDATE"
+          ) {
+            try {
+              const token = localStorage.getItem("token");
+              const res = await fetch(`/api/objectives/${payload.new.id}`, {
+                headers: token
+                  ? { Authorization: `Bearer ${token}` }
+                  : undefined,
+              });
+              if (res.ok) {
+                const freshObjective: Objective = await res.json();
+                setObjectives((prev) => {
+                  if (payload.eventType === "INSERT") {
+                    return [...prev, freshObjective];
+                  }
+                  if (payload.eventType === "UPDATE") {
+                    return prev.map((obj) =>
+                      obj.id === freshObjective.id ? freshObjective : obj
+                    );
+                  }
+                  return prev;
+                });
+              }
+            } catch (e) {
+              console.error("Failed to refetch objective from API", e);
             }
-          });
-        },
+          }
+
+          if (payload.eventType === "DELETE") {
+            setObjectives((prev) =>
+              prev.filter((obj) => obj.id !== payload.old.id)
+            );
+          }
+        }
       )
       .subscribe();
 
@@ -242,7 +263,7 @@ export function OKRsView() {
             "px-4 py-3 rounded-full text-sm font-medium transition",
             filter === "active"
               ? "bg-[#FF8A5B] text-white shadow-sm"
-              : "bg-white text-zinc-700 border border-zinc-100 hover:bg-[#FFF2EF]",
+              : "bg-white text-zinc-700 border border-zinc-100 hover:bg-[#FFF2EF]"
           )}
         >
           Active Objectives
@@ -253,7 +274,7 @@ export function OKRsView() {
             "px-4 py-3 rounded-full text-sm font-medium transition",
             filter === "completed"
               ? "bg-[#FF8A5B] text-white shadow-sm"
-              : "bg-white text-zinc-700 border border-zinc-100 hover:bg-[#FFF2EF]",
+              : "bg-white text-zinc-700 border border-zinc-100 hover:bg-[#FFF2EF]"
           )}
         >
           Completed
@@ -271,7 +292,7 @@ export function OKRsView() {
                 ? (o.title ?? "")
                     .toLowerCase()
                     .includes(search.trim().toLowerCase())
-                : true,
+                : true
             )
             .map((objective) => (
               <div
