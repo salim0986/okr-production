@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { requireAuth } from "@/app/api/utils/authGuard";
 import supabase from "@/app/api/utils/db";
 import { UserPayload } from "@/app/api/types/auth/authTypes";
