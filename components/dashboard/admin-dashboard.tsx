@@ -215,7 +215,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           title="Total Teams"
           value={String(stats?.totalTeams || 0)}

@@ -44,7 +44,7 @@ export function TopNav() {
               {getGreeting()}, {user?.name}
             </h1>
             <p className="text-sm text-gray-500">
-              Here’s your OKR progress overview for this week
+              Here’s your OKR progress overview.
             </p>
           </div>
         </div>
