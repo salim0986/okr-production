@@ -4,13 +4,20 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Target } from "lucide-react";
+import { Plus, Target, Calendar as CalendarIcon } from "lucide-react";
 import { CreateObjectiveDialog } from "./create-objective-dialog";
 import { EditObjectiveDialog } from "./edit-objective-dialog";
 import ObjectiveCard from "@/components/okrs/objective-card";
 import { cn } from "@/lib/utils"; // helper for conditional classes
 import { RealtimePostgresPayload, supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 
 interface Objective {
   id: string;
@@ -43,6 +50,9 @@ export function OKRsView() {
 
   // small local search state (UI-only — does not change logic)
   const [search, setSearch] = useState("");
+
+  // date filter state
+  const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
 
   const fetchObjectives = useCallback(async () => {
     setLoading(true);
@@ -104,11 +114,29 @@ export function OKRsView() {
   }, [fetchObjectives]);
 
   // filtered objectives based on current filter
-  const filteredObjectives = objectives.filter((obj) =>
-    filter === "active"
-      ? obj.status?.toLowerCase() !== "completed"
-      : obj.status?.toLowerCase() === "completed"
-  );
+  const filteredObjectives = objectives
+    .filter((obj) =>
+      filter === "active"
+        ? obj.status?.toLowerCase() !== "completed"
+        : obj.status?.toLowerCase() === "completed"
+    )
+    .filter((obj) => {
+      // If no date filter is selected, show all objectives.
+      if (!dateFilter) {
+        return true;
+      }
+
+      // Parse the objective's end date for comparison.
+      const objectiveEndDate = obj.end_date ? new Date(obj.end_date) : null;
+
+      // Compare the objective's end date with the selected date.
+      return (
+        objectiveEndDate &&
+        objectiveEndDate.getFullYear() === dateFilter.getFullYear() &&
+        objectiveEndDate.getMonth() === dateFilter.getMonth() &&
+        objectiveEndDate.getDate() === dateFilter.getDate()
+      );
+    });
 
   // Realtime subscription (same logic as your original)
   useEffect(() => {
@@ -220,7 +248,7 @@ export function OKRsView() {
 
         <div className="flex items-center gap-3">
           {/* lightweight search UI — purely presentational */}
-          <div className="hidden sm:flex items-center gap-2 bg-white border border-zinc-100 rounded-full px-3 py-2 w-[420px] shadow-sm">
+          <div className="hidden sm:flex items-center gap-2 bg-white border border-zinc-200 rounded-full px-3 py-2 w-[420px] shadow-sm">
             <svg
               className="h-4 w-4 text-zinc-400"
               viewBox="0 0 24 24"
@@ -239,7 +267,7 @@ export function OKRsView() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search objectives..."
-              className="flex-1 bg-transparent outline-none text-sm text-zinc-700"
+              className="flex-1 bg-transparent outline-none text-sm text-zinc-700 py-2 "
             />
           </div>
 
@@ -256,29 +284,58 @@ export function OKRsView() {
       </div>
 
       {/* filter tabs */}
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          onClick={() => setFilter("active")}
-          className={cn(
-            "px-4 py-3 rounded-full text-sm font-medium transition",
-            filter === "active"
-              ? "bg-[#FF8A5B] text-white shadow-sm"
-              : "bg-white text-zinc-700 border border-zinc-100 hover:bg-[#FFF2EF]"
-          )}
-        >
-          Active Objectives
-        </button>
-        <button
-          onClick={() => setFilter("completed")}
-          className={cn(
-            "px-4 py-3 rounded-full text-sm font-medium transition",
-            filter === "completed"
-              ? "bg-[#FF8A5B] text-white shadow-sm"
-              : "bg-white text-zinc-700 border border-zinc-100 hover:bg-[#FFF2EF]"
-          )}
-        >
-          Completed
-        </button>
+      <div className="flex gap-2">
+        <div className="inline-flex flex-wrap items-center gap-3 rounded-full border border-2 border-[#FF8A5B]">
+          <button
+            onClick={() => setFilter("active")}
+            className={cn(
+              "px-4 py-3 rounded-full text-sm font-medium transition border border-2 border-[#FF8A5B]",
+              filter === "active"
+                ? "bg-[#FF8A5B] text-white shadow-sm"
+                : "bg-white text-zinc-700 border border-zinc-100 hover:bg-[#FFF2EF]"
+            )}
+          >
+            Active Objectives
+          </button>
+          <button
+            onClick={() => setFilter("completed")}
+            className={cn(
+              "px-4 py-3 rounded-full text-sm font-medium transition border border-2 border-[#FF8A5B]",
+              filter === "completed"
+                ? "bg-[#FF8A5B] text-white shadow-sm"
+                : "bg-white text-zinc-700 border border-zinc-100 hover:bg-[#FFF2EF]"
+            )}
+          >
+            Completed
+          </button>
+        </div>
+        {/* Date Picker */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[200px] justify-start text-left font-normal py-6 border border-2 border-zinc-200 rounded-3xl text-md shadom-sm text-[#FF8A5B]",
+                !dateFilter && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateFilter ? (
+                format(dateFilter, "PPP")
+              ) : (
+                <span>Filter by due date</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={dateFilter}
+              onSelect={setDateFilter}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* objectives list */}

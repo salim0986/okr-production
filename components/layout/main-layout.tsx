@@ -31,7 +31,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+      <div className="flex h-screen w-full overflow-hidden bg-slate-50 ml-8 p-4">
         {/* Sidebar - fixed */}
         <AppSidebar />
 
@@ -41,7 +41,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           <TopNav />
 
           {/* Scrollable page content */}
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          <main className="flex-1 overflow-y-auto py-6 px-2">{children}</main>
         </div>
       </div>
     </SidebarProvider>

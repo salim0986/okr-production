@@ -29,7 +29,7 @@ export const GET = requireAuth(
         name,
         title,
         last_login,
-        team:team_id(name),
+        team:team_id(id,name),
         key_results: key_results!fk_key_results_assigned_to (
           id,
           current_value,
@@ -86,11 +86,10 @@ export const GET = requireAuth(
         const days = Math.floor(hrs / 24);
         return `${days} day${days > 1 ? "s" : ""} ago`;
       })();
-
       return {
         id: u.id,
         member: { name: u.name, title: u.title },
-        team: u.team?.name,
+        team: u.team,
         okrs,
         progress, // %
         status, // on_track, at_risk, etc.

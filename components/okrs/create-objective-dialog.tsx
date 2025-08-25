@@ -272,6 +272,7 @@ export function CreateObjectiveDialog({
               <input
                 id="due-date"
                 type="date"
+                min={new Date().toISOString().split("T")[0]}
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="w-full mt-2 rounded-md border px-3 py-2 text-sm"

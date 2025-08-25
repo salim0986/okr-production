@@ -297,7 +297,7 @@ export default function ObjectiveCard({
           </div>
 
           {/* Key Results */}
-          <div>
+          <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-medium">
                 Key Results ({krs.length})

@@ -33,11 +33,14 @@ export function TopNav() {
   };
 
   return (
-    <header className="border-b border-gray-200 bg-white px-6 py-4">
-      <div className="flex items-center justify-between">
+    <header className="h-20 bg-gray-100 border border-slate-200 px-6 flex items-center shadow-sm rounded-full p-4">
+      <div className="flex items-center justify-between w-full">
         {/* Left: Sidebar trigger + greeting */}
         <div className="flex items-center gap-4">
-          <SidebarTrigger className="h-9 w-9 rounded-lg border border-gray-200 bg-white hover:bg-gray-50" />
+          <SidebarTrigger
+            className="h-9 w-9 rounded-lg border border-slate-100 bg-white hover:bg-slate-50"
+            title="Toggle sidebar"
+          />
 
           <div>
             <h1 className="text-lg font-semibold text-gray-900">
@@ -54,7 +57,8 @@ export function TopNav() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="relative h-10 w-10 rounded-full border border-gray-200 hover:bg-gray-50"
+              className="relative h-10 w-10 rounded-full border border-slate-100 hover:bg-slate-50"
+              title="Account"
             >
               <Avatar className="h-10 w-10">
                 <AvatarFallback className="bg-[#FF8A5B] text-white font-medium">
